@@ -16,7 +16,7 @@ describe("SystemHealthBanner", () => {
       />,
     );
 
-    expect(screen.getByText("Degraded – some signing services need attention")).toBeInTheDocument();
+    expect(screen.getByText("Degraded — some signing services need attention")).toBeInTheDocument();
     expect(screen.getByText("Affected services: Fulcio, Rekor.")).toBeInTheDocument();
   });
 
@@ -31,6 +31,6 @@ describe("SystemHealthBanner", () => {
       />,
     );
 
-    expect(screen.getByText("Down – signing system unavailable")).toBeInTheDocument();
+    expect(screen.getByText("Down — signing pipeline unavailable")).toBeInTheDocument();
   });
 });

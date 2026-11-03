@@ -19,7 +19,7 @@ export const SystemHealthBanner: React.FC<SystemHealthBannerProps> = ({ overallS
     <Alert
       isInline
       variant={isDown ? "danger" : "warning"}
-      title={isDown ? "Down – signing system unavailable" : "Degraded – some signing services need attention"}
+      title={isDown ? "Down — signing pipeline unavailable" : "Degraded — some signing services need attention"}
     >
       Affected services: {affectedServices.join(", ")}.
     </Alert>

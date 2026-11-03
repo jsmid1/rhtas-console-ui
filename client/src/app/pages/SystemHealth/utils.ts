@@ -4,6 +4,24 @@ export type OverallStatus = "Healthy" | "Degraded" | "Down";
 
 export type Severity = "danger" | "warning" | "success" | "info";
 
+export function formatRelativeTime(value: string, now = Date.now()): string {
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return "unknown";
+
+  const differenceInSeconds = Math.round((now - timestamp) / 1000);
+  const absoluteDifference = Math.abs(differenceInSeconds);
+  const units = [
+    { limit: 60, milliseconds: 1000, suffix: "s" },
+    { limit: 60 * 60, milliseconds: 60 * 1000, suffix: "m" },
+    { limit: 24 * 60 * 60, milliseconds: 60 * 60 * 1000, suffix: "h" },
+    { limit: Number.POSITIVE_INFINITY, milliseconds: 24 * 60 * 60 * 1000, suffix: "d" },
+  ];
+  const unit = units.find(({ limit }) => absoluteDifference < limit) ?? units[units.length - 1];
+  const amount = Math.max(0, Math.round(Math.abs(now - timestamp) / unit.milliseconds));
+
+  return differenceInSeconds < 0 ? `in ${amount}${unit.suffix}` : `${amount}${unit.suffix} ago`;
+}
+
 export function getOverallStatus(statuses: ServiceStatus[]): OverallStatus {
   if (statuses.every((status) => status === "healthy")) return "Healthy";
   if (statuses.every((status) => status === "unhealthy")) return "Down";

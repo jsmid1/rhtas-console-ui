@@ -53,6 +53,13 @@ describe("SystemHealth", () => {
     render(<SystemHealth />);
 
     expect(screen.getByRole("heading", { name: "System Health" })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Monitor service health, track expiring trust assets, and investigate signing failures from one place",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Dashboard online")).toBeInTheDocument();
+    expect(screen.getByText(/^Last checked /)).toBeInTheDocument();
     expect(screen.getByLabelText("Cosign status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("Fulcio status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("Rekor status")).toHaveTextContent("Healthy");
@@ -70,7 +77,7 @@ describe("SystemHealth", () => {
     render(<SystemHealth />);
 
     expect(within(screen.getByLabelText("Fulcio status")).getByText("Down")).toBeInTheDocument();
-    expect(screen.getByText("Degraded – some signing services need attention")).toBeInTheDocument();
+    expect(screen.getByText("Degraded — some signing services need attention")).toBeInTheDocument();
     expect(screen.getByText("Affected services: Fulcio.")).toBeInTheDocument();
   });
 
@@ -88,7 +95,7 @@ describe("SystemHealth", () => {
 
     render(<SystemHealth />);
 
-    expect(screen.getByText("Down – signing system unavailable")).toBeInTheDocument();
+    expect(screen.getByText("Down — signing pipeline unavailable")).toBeInTheDocument();
     expect(screen.getByText("Affected services: Cosign, Fulcio, Rekor, TUF.")).toBeInTheDocument();
   });
 
