@@ -17,6 +17,18 @@ export const SidebarApp: React.FC = () => {
     return (
       <Nav id="nav-sidebar" aria-label="Nav">
         <NavList>
+          {features.observability && (
+            <li className={nav.navItem}>
+              <NavLink
+                to={Paths.systemHealth}
+                className={({ isActive }) => {
+                  return css(LINK_CLASS, isActive ? ACTIVE_LINK_CLASS : "");
+                }}
+              >
+                System Health
+              </NavLink>
+            </li>
+          )}
           <li className={nav.navItem}>
             <NavLink
               to={Paths.trustRoot}
