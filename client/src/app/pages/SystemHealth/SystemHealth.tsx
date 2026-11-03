@@ -1,7 +1,6 @@
 import { DocumentMetadata } from "@app/components/DocumentMetadata";
 import { LoadingWrapper } from "@app/components/LoadingWrapper";
 import { useFetchSystemHealth } from "@app/queries/system-health";
-import { formatDate } from "@app/utils/utils";
 import {
   Alert,
   Bullseye,
@@ -19,16 +18,34 @@ import {
   StackItem,
 } from "@patternfly/react-core";
 import { ExclamationCircleIcon, SyncAltIcon } from "@patternfly/react-icons";
+import { useEffect, useState } from "react";
 import { ServiceStatusCard } from "./components/ServiceStatusCard";
 import { StatusDot } from "./components/StatusDot";
 import { SystemHealthBanner } from "./components/SystemHealthBanner";
-import { getOverallStatus, overallStatusToSeverity, type ServiceStatus } from "./utils";
+import { formatRelativeTime, getOverallStatus, type ServiceStatus } from "./utils";
 
 interface ServiceInfo {
   name: string;
   status: ServiceStatus;
   detail: string;
 }
+
+interface LastCheckedProps {
+  updatedAt: string;
+}
+
+const LastChecked: React.FC<LastCheckedProps> = ({ updatedAt }) => {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+
+    return () => window.clearInterval(timer);
+  }, [updatedAt]);
+
+  return <>Last checked {formatRelativeTime(updatedAt, now)}</>;
+};
 
 export const SystemHealth: React.FC = () => {
   const { data, isLoading, isFetching, fetchError, refetch } = useFetchSystemHealth();
@@ -57,25 +74,30 @@ export const SystemHealth: React.FC = () => {
           <FlexItem>
             <Content>
               <Content component="h1">System Health</Content>
-              <Content component="p">Monitor the current health of TAS signing services from one place</Content>
+              <Content component="p">
+                Monitor service health, track expiring trust assets, and investigate signing failures from one place
+              </Content>
             </Content>
           </FlexItem>
           {data && (
             <FlexItem>
               <Flex alignItems={{ default: "alignItemsCenter" }} spaceItems={{ default: "spaceItemsMd" }}>
                 <FlexItem>
+                  <Content component="small">{overallStatus}</Content>
+                </FlexItem>
+                <FlexItem>
                   <Flex alignItems={{ default: "alignItemsCenter" }} spaceItems={{ default: "spaceItemsXs" }}>
                     <FlexItem>
-                      <StatusDot severity={overallStatusToSeverity(overallStatus)} />
+                      <StatusDot severity="success" />
                     </FlexItem>
                     <FlexItem>
-                      <Content component="small">{overallStatus}</Content>
+                      <Content component="small">Dashboard online</Content>
                     </FlexItem>
                   </Flex>
                 </FlexItem>
                 <FlexItem>
                   <Content component="small" style={{ color: "var(--pf-t--global--text--color--subtle)" }}>
-                    Last checked {formatDate(data.updatedAt)}
+                    <LastChecked updatedAt={data.updatedAt} />
                   </Content>
                 </FlexItem>
                 <FlexItem>
