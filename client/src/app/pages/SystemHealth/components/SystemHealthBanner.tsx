@@ -12,16 +12,18 @@ interface SystemHealthBannerProps {
 }
 
 export const SystemHealthBanner: React.FC<SystemHealthBannerProps> = ({ overallStatus, services }) => {
-  const affectedServices = services.filter(({ status }) => status !== "healthy").map(({ name }) => name);
+  const affectedServices = services.filter(({ status }) => status === "unhealthy").map(({ name }) => name);
+  const unknownServices = services.filter(({ status }) => status === "unknown").map(({ name }) => name);
   const isDown = overallStatus === "Down";
 
   return (
     <Alert
       isInline
       variant={isDown ? "danger" : "warning"}
-      title={isDown ? "Down – signing system unavailable" : "Degraded – some signing services need attention"}
+      title={isDown ? "Down — signing pipeline unavailable" : "Degraded — some signing services need attention"}
     >
-      Affected services: {affectedServices.join(", ")}.
+      {affectedServices.length > 0 && <div>Affected services: {affectedServices.join(", ")}.</div>}
+      {unknownServices.length > 0 && <div>Status unavailable: {unknownServices.join(", ")}.</div>}
     </Alert>
   );
 };

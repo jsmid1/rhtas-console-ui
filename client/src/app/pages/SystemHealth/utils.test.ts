@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getOverallStatus, overallStatusToSeverity, statusLabel } from "./utils";
+import { formatRelativeTime, getOverallStatus, overallStatusToSeverity, statusLabel } from "./utils";
 
 describe("getOverallStatus", () => {
   it("returns Healthy when all services are healthy", () => {
@@ -30,5 +30,15 @@ describe("statusLabel", () => {
     expect(statusLabel("healthy")).toBe("Healthy");
     expect(statusLabel("unhealthy")).toBe("Down");
     expect(statusLabel("unknown")).toBe("Unknown");
+  });
+});
+
+describe("formatRelativeTime", () => {
+  it("formats compact timestamps for the dashboard header", () => {
+    const now = Date.parse("2026-11-03T10:00:04Z");
+
+    expect(formatRelativeTime("2026-11-03T10:00:00Z", now)).toBe("4s ago");
+    expect(formatRelativeTime("2026-11-03T09:55:00Z", now)).toBe("5m ago");
+    expect(formatRelativeTime("not-a-date", now)).toBe("unknown");
   });
 });

@@ -1,5 +1,5 @@
 import type { SystemHealthResponse } from "@app/client";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { SystemHealth } from "./SystemHealth";
@@ -53,6 +53,13 @@ describe("SystemHealth", () => {
     render(<SystemHealth />);
 
     expect(screen.getByRole("heading", { name: "System Health" })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Monitor service health, track expiring trust assets, and investigate signing failures from one place",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Dashboard online")).toBeInTheDocument();
+    expect(screen.getByText(/^Last checked /)).toBeInTheDocument();
     expect(screen.getByLabelText("Cosign status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("Fulcio status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("Rekor status")).toHaveTextContent("Healthy");
@@ -70,7 +77,7 @@ describe("SystemHealth", () => {
     render(<SystemHealth />);
 
     expect(within(screen.getByLabelText("Fulcio status")).getByText("Down")).toBeInTheDocument();
-    expect(screen.getByText("Degraded – some signing services need attention")).toBeInTheDocument();
+    expect(screen.getByText("Degraded — some signing services need attention")).toBeInTheDocument();
     expect(screen.getByText("Affected services: Fulcio.")).toBeInTheDocument();
   });
 
@@ -88,8 +95,24 @@ describe("SystemHealth", () => {
 
     render(<SystemHealth />);
 
-    expect(screen.getByText("Down – signing system unavailable")).toBeInTheDocument();
+    expect(screen.getByText("Down — signing pipeline unavailable")).toBeInTheDocument();
     expect(screen.getByText("Affected services: Cosign, Fulcio, Rekor, TUF.")).toBeInTheDocument();
+  });
+
+  test("updates the relative last-checked time while the page remains open", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-30T09:18:32Z"));
+    setQueryState({}, { ...healthyResponse, updatedAt: "2026-06-30T09:18:28Z" });
+
+    const { unmount } = render(<SystemHealth />);
+
+    expect(screen.getByText("Last checked 4s ago")).toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(2000));
+
+    expect(screen.getByText("Last checked 6s ago")).toBeInTheDocument();
+    unmount();
+    vi.useRealTimers();
   });
 
   test("refreshes on request", async () => {
