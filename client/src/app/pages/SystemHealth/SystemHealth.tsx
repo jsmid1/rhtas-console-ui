@@ -35,7 +35,7 @@ export const SystemHealth: React.FC = () => {
 
   const services: ServiceInfo[] = [
     {
-      name: "TAS",
+      name: "Cosign",
       status: data?.securesignStatus ?? "unknown",
       detail: "Overall signing system",
     },
