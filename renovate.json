@@ -1,5 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>securesign/renovate-config//org-inherited-config.json"
+  ],
+  "enabledManagers": ["npm"],
+  "ignorePaths": [".devcontainer/**"],
   "postUpdateOptions": ["npmInstallTwice"],
   "constraints": {
     "npm": "10.x",
@@ -7,10 +12,51 @@
   },
   "packageRules": [
     {
+      "description": "Disable GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "enabled": false
+    },
+    {
+      "description": "Disable PatternFly major updates",
+      "matchPackageNames": ["@patternfly/**"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "description": "Disable ESLint major updates until @tanstack/eslint-plugin-query supports ESLint 10",
       "matchPackageNames": ["eslint", "@eslint/js"],
       "matchUpdateTypes": ["major"],
       "enabled": false
+    },
+    {
+      "description": "Group PatternFly updates",
+      "matchPackageNames": ["@patternfly/**"],
+      "groupName": "PatternFly",
+      "groupSlug": "patternfly"
+    },
+    {
+      "description": "Group server dependency updates",
+      "matchPackageNames": ["cookie", "ejs", "express", "http-proxy-middleware", "http-terminator"],
+      "groupName": "Server Dependencies",
+      "groupSlug": "server-deps"
+    },
+    {
+      "description": "Group rollup updates",
+      "matchPackageNames": ["@rollup/**", "rollup", "rollup-*"],
+      "groupName": "Rollup",
+      "groupSlug": "rollup"
+    },
+    {
+      "description": "Group linting tool updates",
+      "matchPackageNames": ["@eslint/**", "eslint", "eslint-*", "prettier"],
+      "groupName": "Linting",
+      "groupSlug": "linting"
+    },
+    {
+      "description": "Group build tool updates",
+      "matchPackageNames": ["@vitejs/**", "vite", "vite-*", "@hey-api/**"],
+      "groupName": "Build Tools",
+      "groupSlug": "tools"
     }
   ]
 }
