@@ -53,7 +53,7 @@ describe("SystemHealth", () => {
     render(<SystemHealth />);
 
     expect(screen.getByRole("heading", { name: "System Health" })).toBeInTheDocument();
-    expect(screen.getByLabelText("TAS status")).toHaveTextContent("Healthy");
+    expect(screen.getByLabelText("Cosign status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("Fulcio status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("Rekor status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("TUF status")).toHaveTextContent("Healthy");
@@ -89,7 +89,7 @@ describe("SystemHealth", () => {
     render(<SystemHealth />);
 
     expect(screen.getByText("Down – signing system unavailable")).toBeInTheDocument();
-    expect(screen.getByText("Affected services: TAS, Fulcio, Rekor, TUF.")).toBeInTheDocument();
+    expect(screen.getByText("Affected services: Cosign, Fulcio, Rekor, TUF.")).toBeInTheDocument();
   });
 
   test("refreshes on request", async () => {
@@ -106,7 +106,7 @@ describe("SystemHealth", () => {
 
     render(<SystemHealth />);
 
-    expect(screen.getByLabelText("TAS status")).toBeInTheDocument();
+    expect(screen.getByLabelText("Cosign status")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Refresh/i })).toBeDisabled();
   });
 
@@ -131,7 +131,7 @@ describe("SystemHealth", () => {
     render(<SystemHealth />);
 
     expect(screen.getByText("Unable to refresh system health")).toBeInTheDocument();
-    expect(screen.getByLabelText("TAS status")).toBeInTheDocument();
+    expect(screen.getByLabelText("Cosign status")).toBeInTheDocument();
   });
 
   test("shows an empty state when the API returns no body", () => {
