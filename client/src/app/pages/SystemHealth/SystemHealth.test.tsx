@@ -64,7 +64,7 @@ describe("SystemHealth", () => {
     expect(screen.getByLabelText("Fulcio status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("Rekor status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("TUF status")).toHaveTextContent("Healthy");
-    expect(screen.getByText("Overall signing system")).toBeInTheDocument();
+    expect(screen.queryByText("Overall signing system")).not.toBeInTheDocument();
     expect(screen.queryByText(/mock data/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /Error rate/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /Incident timeline/i })).not.toBeInTheDocument();
