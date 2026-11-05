@@ -27,7 +27,6 @@ import { formatRelativeTime, getOverallStatus, type ServiceStatus } from "./util
 interface ServiceInfo {
   name: string;
   status: ServiceStatus;
-  detail: string;
 }
 
 interface LastCheckedProps {
@@ -50,21 +49,22 @@ const LastChecked: React.FC<LastCheckedProps> = ({ updatedAt }) => {
 export const SystemHealth: React.FC = () => {
   const { data, isLoading, isFetching, fetchError, refetch } = useFetchSystemHealth();
 
-  const services: ServiceInfo[] = [
-    {
-      name: "Cosign",
-      status: data?.securesignStatus ?? "unknown",
-      detail: "Overall signing system",
-    },
+  const visibleServices: ServiceInfo[] = [
     {
       name: "Fulcio",
       status: data?.fulcioStatus ?? "unknown",
-      detail: "Certificate authority",
     },
-    { name: "Rekor", status: data?.rekorStatus ?? "unknown", detail: "Transparency log" },
-    { name: "TUF", status: data?.tufStatus ?? "unknown", detail: "Trust metadata repository" },
+    { name: "Rekor", status: data?.rekorStatus ?? "unknown" },
+    { name: "TUF", status: data?.tufStatus ?? "unknown" },
   ];
-  const overallStatus = getOverallStatus(services.map(({ status }) => status));
+  const monitoredServices: ServiceInfo[] = [
+    { name: "Securesign operator", status: data?.securesignStatus ?? "unknown" },
+    ...visibleServices,
+    { name: "CT log", status: data?.ctlogStatus ?? "unknown" },
+    { name: "Trillian", status: data?.trillianStatus ?? "unknown" },
+    { name: "TSA", status: data?.tsaStatus ?? "unknown" },
+  ];
+  const overallStatus = getOverallStatus(monitoredServices.map(({ status }) => status));
 
   return (
     <>
@@ -153,14 +153,14 @@ export const SystemHealth: React.FC = () => {
               )}
               {overallStatus !== "Healthy" && (
                 <StackItem>
-                  <SystemHealthBanner overallStatus={overallStatus} services={services} />
+                  <SystemHealthBanner overallStatus={overallStatus} services={monitoredServices} />
                 </StackItem>
               )}
               <StackItem>
                 <Grid hasGutter>
-                  {services.map((service) => (
-                    <GridItem key={service.name} span={12} sm={6} lg={3}>
-                      <ServiceStatusCard name={service.name} status={service.status} detail={service.detail} />
+                  {visibleServices.map((service) => (
+                    <GridItem key={service.name} span={12} sm={6} lg={4}>
+                      <ServiceStatusCard name={service.name} status={service.status} />
                     </GridItem>
                   ))}
                 </Grid>
