@@ -60,11 +60,13 @@ describe("SystemHealth", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Dashboard online")).toBeInTheDocument();
     expect(screen.getByText(/^Last checked /)).toBeInTheDocument();
-    expect(screen.getByLabelText("Cosign status")).toHaveTextContent("Healthy");
+    expect(screen.queryByLabelText("Cosign status")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Securesign status")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Fulcio status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("Rekor status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("TUF status")).toHaveTextContent("Healthy");
-    expect(screen.getByText("Overall signing system")).toBeInTheDocument();
+    expect(screen.getByLabelText("Fulcio status").parentElement).toHaveClass("pf-m-4-col-on-lg");
+    expect(screen.queryByText("Overall signing system")).not.toBeInTheDocument();
     expect(screen.queryByText(/mock data/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /Error rate/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /Incident timeline/i })).not.toBeInTheDocument();
@@ -81,7 +83,31 @@ describe("SystemHealth", () => {
     expect(screen.getByText("Affected services: Fulcio.")).toBeInTheDocument();
   });
 
-  test("shows Down only when all displayed services are unhealthy", () => {
+  test.each([
+    ["ctlogStatus", "CT log"],
+    ["trillianStatus", "Trillian"],
+    ["tsaStatus", "TSA"],
+  ] as const)("includes a failed %s in overall health and the warning", (field, serviceName) => {
+    setQueryState({}, { ...healthyResponse, [field]: "unhealthy" });
+
+    render(<SystemHealth />);
+
+    expect(screen.getByText("Degraded — some signing services need attention")).toBeInTheDocument();
+    expect(screen.getByText(`Affected services: ${serviceName}.`)).toBeInTheDocument();
+  });
+
+  test("does not present the overall Securesign operator status as Cosign health", () => {
+    setQueryState({}, { ...healthyResponse, securesignStatus: "unhealthy" });
+
+    render(<SystemHealth />);
+
+    expect(screen.queryByLabelText("Cosign status")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Securesign status")).not.toBeInTheDocument();
+    expect(screen.getByText("Degraded — some signing services need attention")).toBeInTheDocument();
+    expect(screen.getByText("Affected services: Securesign operator.")).toBeInTheDocument();
+  });
+
+  test("shows Down only when every monitored API status is unhealthy", () => {
     setQueryState(
       {},
       {
@@ -90,13 +116,18 @@ describe("SystemHealth", () => {
         fulcioStatus: "unhealthy",
         rekorStatus: "unhealthy",
         tufStatus: "unhealthy",
+        ctlogStatus: "unhealthy",
+        trillianStatus: "unhealthy",
+        tsaStatus: "unhealthy",
       },
     );
 
     render(<SystemHealth />);
 
     expect(screen.getByText("Down — signing pipeline unavailable")).toBeInTheDocument();
-    expect(screen.getByText("Affected services: Cosign, Fulcio, Rekor, TUF.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Affected services: Securesign operator, Fulcio, Rekor, TUF, CT log, Trillian, TSA."),
+    ).toBeInTheDocument();
   });
 
   test("updates the relative last-checked time while the page remains open", () => {
@@ -129,7 +160,7 @@ describe("SystemHealth", () => {
 
     render(<SystemHealth />);
 
-    expect(screen.getByLabelText("Cosign status")).toBeInTheDocument();
+    expect(screen.getByLabelText("Fulcio status")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Refresh/i })).toBeDisabled();
   });
 
@@ -154,7 +185,7 @@ describe("SystemHealth", () => {
     render(<SystemHealth />);
 
     expect(screen.getByText("Unable to refresh system health")).toBeInTheDocument();
-    expect(screen.getByLabelText("Cosign status")).toBeInTheDocument();
+    expect(screen.getByLabelText("Fulcio status")).toBeInTheDocument();
   });
 
   test("shows an empty state when the API returns no body", () => {
