@@ -1,6 +1,7 @@
 import { DocumentMetadata } from "@app/components/DocumentMetadata";
 import { LoadingWrapper } from "@app/components/LoadingWrapper";
 import { useFetchSystemHealth } from "@app/queries/system-health";
+import { useFetchTrustMetadataInfo, useFetchTrustTargetCertificates } from "@app/queries/trust";
 import {
   Alert,
   Bullseye,
@@ -19,6 +20,7 @@ import {
 } from "@patternfly/react-core";
 import { ExclamationCircleIcon, SyncAltIcon } from "@patternfly/react-icons";
 import { useEffect, useState } from "react";
+import { ExpiringTrustAssets } from "./components/ExpiringTrustAssets";
 import { ServiceStatusCard } from "./components/ServiceStatusCard";
 import { StatusDot } from "./components/StatusDot";
 import { SystemHealthBanner } from "./components/SystemHealthBanner";
@@ -48,6 +50,18 @@ const LastChecked: React.FC<LastCheckedProps> = ({ updatedAt }) => {
 
 export const SystemHealth: React.FC = () => {
   const { data, isLoading, isFetching, fetchError, refetch } = useFetchSystemHealth();
+  const {
+    certificates,
+    isFetching: isFetchingCertificates,
+    fetchError: certificatesFetchError,
+    refetch: refetchCertificates,
+  } = useFetchTrustTargetCertificates();
+  const {
+    metadataInfo,
+    isFetching: isFetchingMetadata,
+    fetchError: metadataFetchError,
+    refetch: refetchMetadata,
+  } = useFetchTrustMetadataInfo();
 
   const visibleServices: ServiceInfo[] = [
     {
@@ -65,6 +79,10 @@ export const SystemHealth: React.FC = () => {
     { name: "TSA", status: data?.tsaStatus ?? "unknown" },
   ];
   const overallStatus = getOverallStatus(monitoredServices.map(({ status }) => status));
+  const isRefreshing = isFetching || isFetchingCertificates || isFetchingMetadata;
+  const handleRefresh = () => {
+    void Promise.allSettled([refetch(), refetchCertificates(), refetchMetadata()]);
+  };
 
   return (
     <>
@@ -105,9 +123,9 @@ export const SystemHealth: React.FC = () => {
                     variant="secondary"
                     size="sm"
                     icon={<SyncAltIcon />}
-                    isLoading={isFetching}
-                    isDisabled={isFetching}
-                    onClick={() => void refetch()}
+                    isLoading={isRefreshing}
+                    isDisabled={isRefreshing}
+                    onClick={handleRefresh}
                   >
                     Refresh
                   </Button>
@@ -133,7 +151,7 @@ export const SystemHealth: React.FC = () => {
                 <EmptyStateBody>
                   There was an error retrieving data. Check your connection and try again.
                 </EmptyStateBody>
-                <Button variant="primary" isLoading={isFetching} isDisabled={isFetching} onClick={() => void refetch()}>
+                <Button variant="primary" isLoading={isRefreshing} isDisabled={isRefreshing} onClick={handleRefresh}>
                   Retry
                 </Button>
               </EmptyState>
@@ -165,6 +183,20 @@ export const SystemHealth: React.FC = () => {
                   ))}
                 </Grid>
               </StackItem>
+              <StackItem>
+                <Grid hasGutter>
+                  <GridItem span={12} lg={6}>
+                    <ExpiringTrustAssets
+                      certificates={certificates?.data}
+                      metadataInfo={metadataInfo}
+                      isFetchingCertificates={isFetchingCertificates}
+                      isFetchingMetadata={isFetchingMetadata}
+                      certificatesFetchError={certificatesFetchError}
+                      metadataFetchError={metadataFetchError}
+                    />
+                  </GridItem>
+                </Grid>
+              </StackItem>
             </Stack>
           ) : (
             !isLoading &&
@@ -172,7 +204,7 @@ export const SystemHealth: React.FC = () => {
               <Bullseye>
                 <EmptyState titleText="No health data available" headingLevel="h2">
                   <EmptyStateBody>Refresh to request the latest TAS service status.</EmptyStateBody>
-                  <Button variant="primary" onClick={() => void refetch()}>
+                  <Button variant="primary" onClick={handleRefresh}>
                     Refresh
                   </Button>
                 </EmptyState>

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Mock the ENV module before importing the hooks
@@ -177,6 +177,20 @@ describe("Trust Queries", () => {
       expect(result.current.metadataInfo).toEqual(trustMetadataInfoMock);
     });
 
+    it("should expose background metadata refetch state", async () => {
+      const { result } = renderHook(() => useFetchTrustMetadataInfo(), { wrapper });
+
+      await waitFor(() => expect(result.current.isFetching).toBe(false), { timeout: 2000 });
+
+      let refetchPromise: ReturnType<typeof result.current.refetch>;
+      act(() => {
+        refetchPromise = result.current.refetch();
+      });
+      await waitFor(() => expect(result.current.isFetching).toBe(true));
+      await act(async () => refetchPromise);
+      await waitFor(() => expect(result.current.isFetching).toBe(false), { timeout: 2000 });
+    });
+
     it("should use correct query key", async () => {
       const { result } = renderHook(() => useFetchTrustMetadataInfo(), { wrapper });
 
@@ -246,6 +260,20 @@ describe("Trust Queries", () => {
       );
 
       expect(result.current.certificates).toEqual(trustTargetCertificatesMock);
+    });
+
+    it("should expose background certificate refetch state", async () => {
+      const { result } = renderHook(() => useFetchTrustTargetCertificates(), { wrapper });
+
+      await waitFor(() => expect(result.current.isFetching).toBe(false), { timeout: 2000 });
+
+      let refetchPromise: ReturnType<typeof result.current.refetch>;
+      act(() => {
+        refetchPromise = result.current.refetch();
+      });
+      await waitFor(() => expect(result.current.isFetching).toBe(true));
+      await act(async () => refetchPromise);
+      await waitFor(() => expect(result.current.isFetching).toBe(false), { timeout: 2000 });
     });
 
     it("should use correct query key", async () => {

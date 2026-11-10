@@ -9,14 +9,24 @@ vi.mock("@app/components/DocumentMetadata", () => ({
 }));
 
 const mockRefetch = vi.fn();
+const mockRefetchCertificates = vi.fn();
+const mockRefetchMetadata = vi.fn();
 
 vi.mock("@app/queries/system-health", () => ({
   useFetchSystemHealth: vi.fn(),
 }));
 
+vi.mock("@app/queries/trust", () => ({
+  useFetchTrustMetadataInfo: vi.fn(),
+  useFetchTrustTargetCertificates: vi.fn(),
+}));
+
 import { useFetchSystemHealth } from "@app/queries/system-health";
+import { useFetchTrustMetadataInfo, useFetchTrustTargetCertificates } from "@app/queries/trust";
 
 const mockUseFetchSystemHealth = vi.mocked(useFetchSystemHealth);
+const mockUseFetchTrustMetadataInfo = vi.mocked(useFetchTrustMetadataInfo);
+const mockUseFetchTrustTargetCertificates = vi.mocked(useFetchTrustTargetCertificates);
 
 const healthyResponse: SystemHealthResponse = {
   securesignStatus: "healthy",
@@ -43,10 +53,33 @@ const setQueryState = (
   } as ReturnType<typeof useFetchSystemHealth>);
 };
 
+const setTrustQueryState = (
+  certificateOverrides: Partial<ReturnType<typeof useFetchTrustTargetCertificates>> = {},
+  metadataOverrides: Partial<ReturnType<typeof useFetchTrustMetadataInfo>> = {},
+) => {
+  mockUseFetchTrustTargetCertificates.mockReturnValue({
+    certificates: { data: [] },
+    isLoading: false,
+    isFetching: false,
+    fetchError: null,
+    refetch: mockRefetchCertificates,
+    ...certificateOverrides,
+  } as ReturnType<typeof useFetchTrustTargetCertificates>);
+  mockUseFetchTrustMetadataInfo.mockReturnValue({
+    metadataInfo: { data: {} },
+    isLoading: false,
+    isFetching: false,
+    fetchError: null,
+    refetch: mockRefetchMetadata,
+    ...metadataOverrides,
+  } as ReturnType<typeof useFetchTrustMetadataInfo>);
+};
+
 describe("SystemHealth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setQueryState();
+    setTrustQueryState();
   });
 
   test("renders the real API-backed service cards and no mock-only panels", () => {
@@ -70,7 +103,8 @@ describe("SystemHealth", () => {
     expect(screen.queryByText(/mock data/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /Error rate/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /Incident timeline/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: /Expiring trust assets/i })).not.toBeInTheDocument();
+    expect(screen.getByText("Expiring trust assets")).toBeInTheDocument();
+    expect(screen.getByText("No expiry warnings")).toBeInTheDocument();
   });
 
   test("uses fulcioStatus for the Fulcio card and lists it in the degraded banner", () => {
@@ -153,6 +187,8 @@ describe("SystemHealth", () => {
     await user.click(screen.getByRole("button", { name: /Refresh/i }));
 
     expect(mockRefetch).toHaveBeenCalledOnce();
+    expect(mockRefetchCertificates).toHaveBeenCalledOnce();
+    expect(mockRefetchMetadata).toHaveBeenCalledOnce();
   });
 
   test("keeps stale data visible during a background refresh", () => {
@@ -161,6 +197,15 @@ describe("SystemHealth", () => {
     render(<SystemHealth />);
 
     expect(screen.getByLabelText("Fulcio status")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Refresh/i })).toBeDisabled();
+  });
+
+  test("keeps refresh disabled while trust data is being refetched", () => {
+    setTrustQueryState({ isFetching: true });
+
+    render(<SystemHealth />);
+
+    expect(screen.getByText("No expiry warnings")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Refresh/i })).toBeDisabled();
   });
 
@@ -177,6 +222,8 @@ describe("SystemHealth", () => {
     expect(screen.getByText("Unable to connect")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Retry" }));
     expect(mockRefetch).toHaveBeenCalledOnce();
+    expect(mockRefetchCertificates).toHaveBeenCalledOnce();
+    expect(mockRefetchMetadata).toHaveBeenCalledOnce();
   });
 
   test("shows a stale-data warning after a failed refresh", () => {
