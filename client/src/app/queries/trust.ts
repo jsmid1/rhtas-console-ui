@@ -39,7 +39,10 @@ export const useFetchTrustConfig = () => {
 };
 
 export const useFetchTrustMetadataInfo = () => {
-  const { data, isLoading, error, refetch } = useMockableQuery<MetadataInfoResponse | null, AxiosError<ApiError>>(
+  const { data, isLoading, isFetching, error, refetch } = useMockableQuery<
+    MetadataInfoResponse | null,
+    AxiosError<ApiError>
+  >(
     {
       queryKey: [TrustKey, "metadata"],
       queryFn: async () => {
@@ -54,14 +57,18 @@ export const useFetchTrustMetadataInfo = () => {
 
   return {
     metadataInfo: data,
-    isFetching: isLoading,
+    isLoading,
+    isFetching,
     fetchError: error,
     refetch,
   };
 };
 
 export const useFetchTrustTargetCertificates = () => {
-  const { data, isLoading, error, refetch } = useMockableQuery<CertificateInfoList | null, AxiosError<ApiError>>(
+  const { data, isLoading, isFetching, error, refetch } = useMockableQuery<
+    CertificateInfoList | null,
+    AxiosError<ApiError>
+  >(
     {
       queryKey: [TrustKey, "certificates"],
       queryFn: async () => {
@@ -76,7 +83,8 @@ export const useFetchTrustTargetCertificates = () => {
 
   return {
     certificates: data,
-    isFetching: isLoading,
+    isLoading,
+    isFetching,
     fetchError: error,
     refetch,
   };
