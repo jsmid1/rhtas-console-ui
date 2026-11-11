@@ -6,7 +6,7 @@ describe("SystemHealthBanner", () => {
   test("distinguishes affected services from unavailable statuses", () => {
     render(
       <SystemHealthBanner
-        overallStatus="Degraded"
+        overallStatus="unhealthy"
         services={[
           { name: "TAS", status: "healthy" },
           { name: "Fulcio", status: "unhealthy" },
@@ -16,7 +16,7 @@ describe("SystemHealthBanner", () => {
       />,
     );
 
-    expect(screen.getByText("Degraded — some signing services need attention")).toBeInTheDocument();
+    expect(screen.getByText("Down — signing pipeline unavailable")).toBeInTheDocument();
     expect(screen.getByText("Affected services: Fulcio.")).toBeInTheDocument();
     expect(screen.getByText("Status unavailable: Rekor.")).toBeInTheDocument();
   });
@@ -24,7 +24,7 @@ describe("SystemHealthBanner", () => {
   test("does not describe an unknown service as affected", () => {
     render(
       <SystemHealthBanner
-        overallStatus="Degraded"
+        overallStatus="unknown"
         services={[
           { name: "Fulcio", status: "healthy" },
           { name: "Rekor", status: "unknown" },
@@ -39,7 +39,7 @@ describe("SystemHealthBanner", () => {
   test("renders the down state", () => {
     render(
       <SystemHealthBanner
-        overallStatus="Down"
+        overallStatus="unhealthy"
         services={[
           { name: "TAS", status: "unhealthy" },
           { name: "Fulcio", status: "unhealthy" },

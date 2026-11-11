@@ -73,61 +73,59 @@ describe("SystemHealth", () => {
     expect(screen.queryByRole("heading", { name: /Expiring trust assets/i })).not.toBeInTheDocument();
   });
 
-  test("uses fulcioStatus for the Fulcio card and lists it in the degraded banner", () => {
+  test("uses fulcioStatus for the Fulcio card without overriding the API-provided overall status", () => {
     setQueryState({}, { ...healthyResponse, fulcioStatus: "unhealthy" });
 
     render(<SystemHealth />);
 
     expect(within(screen.getByLabelText("Fulcio status")).getByText("Down")).toBeInTheDocument();
-    expect(screen.getByText("Degraded — some signing services need attention")).toBeInTheDocument();
-    expect(screen.getByText("Affected services: Fulcio.")).toBeInTheDocument();
+    expect(screen.queryByText("Degraded — some signing services need attention")).not.toBeInTheDocument();
   });
 
-  test.each([
-    ["ctlogStatus", "CT log"],
-    ["trillianStatus", "Trillian"],
-    ["tsaStatus", "TSA"],
-  ] as const)("includes a failed %s in overall health and the warning", (field, serviceName) => {
-    setQueryState({}, { ...healthyResponse, [field]: "unhealthy" });
+  test.each(["ctlogStatus", "trillianStatus", "tsaStatus"] as const)(
+    "does not derive the overall health from a failed %s",
+    (field) => {
+      setQueryState({}, { ...healthyResponse, [field]: "unhealthy" });
 
-    render(<SystemHealth />);
+      render(<SystemHealth />);
 
-    expect(screen.getByText("Degraded — some signing services need attention")).toBeInTheDocument();
-    expect(screen.getByText(`Affected services: ${serviceName}.`)).toBeInTheDocument();
-  });
+      expect(screen.queryByText("Degraded — some signing services need attention")).not.toBeInTheDocument();
+    },
+  );
 
-  test("does not present the overall Securesign operator status as Cosign health", () => {
+  test("uses the API-provided aggregate status without presenting it as Cosign health", () => {
     setQueryState({}, { ...healthyResponse, securesignStatus: "unhealthy" });
 
     render(<SystemHealth />);
 
     expect(screen.queryByLabelText("Cosign status")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Securesign status")).not.toBeInTheDocument();
-    expect(screen.getByText("Degraded — some signing services need attention")).toBeInTheDocument();
-    expect(screen.getByText("Affected services: Securesign operator.")).toBeInTheDocument();
+    expect(screen.getByText("Down — signing pipeline unavailable")).toBeInTheDocument();
+    expect(screen.getByText("Service status details are unavailable.")).toBeInTheDocument();
   });
 
-  test("shows Down only when every monitored API status is unhealthy", () => {
+  test("uses an API-reported outage even when individual service statuses are healthy", () => {
     setQueryState(
       {},
       {
         ...healthyResponse,
         securesignStatus: "unhealthy",
-        fulcioStatus: "unhealthy",
-        rekorStatus: "unhealthy",
-        tufStatus: "unhealthy",
-        ctlogStatus: "unhealthy",
-        trillianStatus: "unhealthy",
-        tsaStatus: "unhealthy",
       },
     );
 
     render(<SystemHealth />);
 
     expect(screen.getByText("Down — signing pipeline unavailable")).toBeInTheDocument();
-    expect(
-      screen.getByText("Affected services: Securesign operator, Fulcio, Rekor, TUF, CT log, Trillian, TSA."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Service status details are unavailable.")).toBeInTheDocument();
+  });
+
+  test("renders an unknown aggregate status when the API cannot determine overall health", () => {
+    setQueryState({}, { ...healthyResponse, securesignStatus: "unknown" });
+
+    render(<SystemHealth />);
+
+    expect(screen.getByText("Status unavailable — unable to determine signing pipeline health")).toBeInTheDocument();
+    expect(screen.getByText("Service status details are unavailable.")).toBeInTheDocument();
   });
 
   test("updates the relative last-checked time while the page remains open", () => {

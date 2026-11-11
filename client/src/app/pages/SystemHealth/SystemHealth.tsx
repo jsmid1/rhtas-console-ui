@@ -22,7 +22,7 @@ import { useEffect, useState } from "react";
 import { ServiceStatusCard } from "./components/ServiceStatusCard";
 import { StatusDot } from "./components/StatusDot";
 import { SystemHealthBanner } from "./components/SystemHealthBanner";
-import { formatRelativeTime, getOverallStatus, type ServiceStatus } from "./utils";
+import { formatRelativeTime, statusLabel, type ServiceStatus } from "./utils";
 
 interface ServiceInfo {
   name: string;
@@ -58,13 +58,15 @@ export const SystemHealth: React.FC = () => {
     { name: "TUF", status: data?.tufStatus ?? "unknown" },
   ];
   const monitoredServices: ServiceInfo[] = [
-    { name: "Securesign operator", status: data?.securesignStatus ?? "unknown" },
     ...visibleServices,
     { name: "CT log", status: data?.ctlogStatus ?? "unknown" },
     { name: "Trillian", status: data?.trillianStatus ?? "unknown" },
     { name: "TSA", status: data?.tsaStatus ?? "unknown" },
   ];
-  const overallStatus = getOverallStatus(monitoredServices.map(({ status }) => status));
+  // The API owns the aggregate health decision. Individual service statuses are
+  // displayed as supporting detail and must not be used to derive a conflicting
+  // page-level state.
+  const overallStatus = data?.securesignStatus ?? "unknown";
 
   return (
     <>
@@ -83,7 +85,7 @@ export const SystemHealth: React.FC = () => {
             <FlexItem>
               <Flex alignItems={{ default: "alignItemsCenter" }} spaceItems={{ default: "spaceItemsMd" }}>
                 <FlexItem>
-                  <Content component="small">{overallStatus}</Content>
+                  <Content component="small">{statusLabel(overallStatus)}</Content>
                 </FlexItem>
                 <FlexItem>
                   <Flex alignItems={{ default: "alignItemsCenter" }} spaceItems={{ default: "spaceItemsXs" }}>
@@ -151,7 +153,7 @@ export const SystemHealth: React.FC = () => {
                   </Alert>
                 </StackItem>
               )}
-              {overallStatus !== "Healthy" && (
+              {overallStatus !== "healthy" && (
                 <StackItem>
                   <SystemHealthBanner overallStatus={overallStatus} services={monitoredServices} />
                 </StackItem>
