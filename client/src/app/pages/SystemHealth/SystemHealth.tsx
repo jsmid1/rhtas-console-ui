@@ -90,14 +90,15 @@ export const SystemHealth: React.FC = () => {
     const details = servicesByName.get(name);
     return { name: label, status: details?.status ?? "unknown", details };
   };
-
-  const visibleServices = [serviceInfo("fulcio", "Fulcio"), serviceInfo("rekor", "Rekor"), serviceInfo("tuf", "TUF")];
-  const monitoredServices: ServiceInfo[] = [
-    ...visibleServices,
+  const visibleServices = [
+    serviceInfo("fulcio", "Fulcio"),
+    serviceInfo("rekor", "Rekor"),
+    serviceInfo("tuf", "TUF"),
     serviceInfo("ctlog", "CT log"),
     serviceInfo("trillian", "Trillian"),
     serviceInfo("tsa", "TSA"),
   ];
+  const monitoredServices: ServiceInfo[] = [...visibleServices];
   const securesignStatus = data?.securesignStatus ?? "unknown";
   const overallStatus = getDashboardStatus(
     monitoredServices.map(({ status }) => status),
