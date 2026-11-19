@@ -18,4 +18,10 @@ describe("ServiceStatusCard", () => {
 
     expect(screen.getByLabelText("TUF status")).toHaveTextContent("Unknown");
   });
+
+  test("renders a live probe summary when supplied", () => {
+    render(<ServiceStatusCard name="Rekor" status="healthy" summary="p95 210ms · 0.0% errors" />);
+
+    expect(screen.getByLabelText("Rekor status")).toHaveTextContent("p95 210ms · 0.0% errors");
+  });
 });

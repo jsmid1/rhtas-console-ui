@@ -30,11 +30,30 @@ import { dashboardStatusLabel, formatRelativeTime, getDashboardStatus, type Serv
 interface ServiceInfo {
   name: string;
   status: ServiceStatus;
+  details?: ServiceHealth;
 }
 
 interface LastCheckedProps {
   updatedAt?: string | null;
 }
+
+const serviceSummary = (service: ServiceHealth | undefined) => {
+  if (!service?.probed) return undefined;
+
+  const details: string[] = [];
+  if (service.latencyP95Ms != null) {
+    const latency =
+      service.latencyP95Ms >= 1000
+        ? `${(service.latencyP95Ms / 1000).toFixed(1)}s`
+        : `${Math.round(service.latencyP95Ms)}ms`;
+    details.push(`p95 ${latency}`);
+  }
+  if (service.errorRate != null) {
+    details.push(`${(service.errorRate * 100).toFixed(1)}% errors`);
+  }
+
+  return details.length > 0 ? details.join(" · ") : undefined;
+};
 
 const LastChecked: React.FC<LastCheckedProps> = ({ updatedAt }) => {
   const [now, setNow] = useState(() => Date.now());
@@ -66,19 +85,18 @@ export const SystemHealth: React.FC = () => {
     refetch: refetchMetadata,
   } = useFetchTrustMetadataInfo();
 
-  const serviceStatus = (name: ServiceHealth["name"]): ServiceStatus =>
-    data?.services?.find((service) => service.name === name)?.status ?? "unknown";
+  const servicesByName = new Map(data?.services?.map((service) => [service.name, service]));
+  const serviceInfo = (name: ServiceHealth["name"], label: string): ServiceInfo => {
+    const details = servicesByName.get(name);
+    return { name: label, status: details?.status ?? "unknown", details };
+  };
 
-  const visibleServices: ServiceInfo[] = [
-    { name: "Fulcio", status: serviceStatus("fulcio") },
-    { name: "Rekor", status: serviceStatus("rekor") },
-    { name: "TUF", status: serviceStatus("tuf") },
-  ];
+  const visibleServices = [serviceInfo("fulcio", "Fulcio"), serviceInfo("rekor", "Rekor"), serviceInfo("tuf", "TUF")];
   const monitoredServices: ServiceInfo[] = [
     ...visibleServices,
-    { name: "CT log", status: serviceStatus("ctlog") },
-    { name: "Trillian", status: serviceStatus("trillian") },
-    { name: "TSA", status: serviceStatus("tsa") },
+    serviceInfo("ctlog", "CT log"),
+    serviceInfo("trillian", "Trillian"),
+    serviceInfo("tsa", "TSA"),
   ];
   const securesignStatus = data?.securesignStatus ?? "unknown";
   const overallStatus = getDashboardStatus(
@@ -192,7 +210,11 @@ export const SystemHealth: React.FC = () => {
                 <Grid hasGutter>
                   {visibleServices.map((service) => (
                     <GridItem key={service.name} span={12} sm={6} lg={4}>
-                      <ServiceStatusCard name={service.name} status={service.status} />
+                      <ServiceStatusCard
+                        name={service.name}
+                        status={service.status}
+                        summary={serviceSummary(service.details)}
+                      />
                     </GridItem>
                   ))}
                 </Grid>
