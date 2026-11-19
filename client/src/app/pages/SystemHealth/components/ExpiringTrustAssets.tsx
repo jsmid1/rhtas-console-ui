@@ -57,6 +57,7 @@ const expirationTimestamp = (expires?: string) => {
 };
 
 const URGENT_EXPIRY_THRESHOLD_DAYS = 30;
+const RENEWAL_RUNBOOK_URL = "https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer";
 
 export const isUrgentExpiry = (asset: ExpiringTrustAsset, now = Date.now()) => {
   if (asset.status === "expired") return true;
@@ -255,6 +256,13 @@ export const ExpiringTrustAssets: React.FC<ExpiringTrustAssetsProps> = ({
                 >
                   <EmptyStateBody>No certificates or TUF metadata currently need attention.</EmptyStateBody>
                 </EmptyState>
+              </StackItem>
+            )}
+            {assets.length > 0 && (
+              <StackItem>
+                <Content component="a" href={RENEWAL_RUNBOOK_URL} target="_blank" rel="noopener noreferrer">
+                  Renewal runbook →
+                </Content>
               </StackItem>
             )}
           </Stack>

@@ -116,6 +116,10 @@ describe("ExpiringTrustAssets", () => {
     expect(screen.getByText("Expired", { selector: "p" })).toBeInTheDocument();
     expect(screen.getByText("fulcio.pem")).toBeInTheDocument();
     expect(screen.getByText("Expires Dec 01, 2026")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Renewal runbook →" })).toHaveAttribute(
+      "href",
+      "https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer",
+    );
     vi.useRealTimers();
   });
 
@@ -134,6 +138,7 @@ describe("ExpiringTrustAssets", () => {
     rerender(<ExpiringTrustAssets {...defaultProps} certificates={[]} metadataInfo={{ data: {} }} />);
     expect(screen.getByText("No expiry warnings")).toBeInTheDocument();
     expect(screen.getByText("No certificates or TUF metadata currently need attention.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Renewal runbook →" })).not.toBeInTheDocument();
   });
 
   test("preserves available warnings when one source fails", () => {
