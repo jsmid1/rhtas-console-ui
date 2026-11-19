@@ -68,9 +68,12 @@ describe("ExpiringTrustAssets", () => {
     expect(
       isUrgentExpiry({ id: "later", name: "Later", status: "expiring", expires: "2027-08-01T10:00:00Z" }, now),
     ).toBe(false);
+    expect(
+      isUrgentExpiry({ id: "active", name: "Active", status: "active", expires: "2026-12-01T10:00:00Z" }, now),
+    ).toBe(false);
   });
 
-  test("uses the latest metadata version and includes only warning statuses", () => {
+  test("uses the latest metadata version and includes active trust assets", () => {
     expect(getExpiringTrustAssets(certificates, metadataInfo)).toEqual([
       {
         id: "metadata-timestamp-3",
@@ -83,6 +86,12 @@ describe("ExpiringTrustAssets", () => {
         name: "fulcio.pem",
         status: "expiring",
         expires: "2026-12-01T10:00:00Z",
+      },
+      {
+        id: "certificate-rekor.pem-2027-12-01T10:00:00Z-CN=subject",
+        name: "rekor.pem",
+        status: "active",
+        expires: "2027-12-01T10:00:00Z",
       },
     ]);
   });
@@ -137,7 +146,7 @@ describe("ExpiringTrustAssets", () => {
 
     rerender(<ExpiringTrustAssets {...defaultProps} certificates={[]} metadataInfo={{ data: {} }} />);
     expect(screen.getByText("No expiry warnings")).toBeInTheDocument();
-    expect(screen.getByText("No certificates or TUF metadata currently need attention.")).toBeInTheDocument();
+    expect(screen.getByText("No trust assets with expiry information are currently available.")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Renewal runbook →" })).not.toBeInTheDocument();
   });
 

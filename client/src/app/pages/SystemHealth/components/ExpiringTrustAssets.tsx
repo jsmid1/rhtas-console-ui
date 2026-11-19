@@ -24,7 +24,7 @@ import { formatRelativeTime } from "../utils";
 interface ExpiringTrustAsset {
   id: string;
   name: string;
-  status: "expiring" | "expired";
+  status: "active" | "expiring" | "expired";
   expires?: string;
 }
 
@@ -37,15 +37,16 @@ interface ExpiringTrustAssetsProps {
   metadataFetchError: unknown;
 }
 
-const isExpiryWarning = (status: string): status is ExpiringTrustAsset["status"] =>
-  status === "expiring" || status === "expired";
-
 const effectiveExpiryStatus = (
-  status: ExpiringTrustAsset["status"],
+  status: string,
   expires: string | undefined,
   now: number,
-): ExpiringTrustAsset["status"] =>
-  status === "expired" || expirationTimestamp(expires) <= now ? "expired" : "expiring";
+): ExpiringTrustAsset["status"] | null => {
+  if (status === "expired" || expirationTimestamp(expires) <= now) return "expired";
+  if (status === "expiring") return "expiring";
+  if (status === "active") return "active";
+  return null;
+};
 
 const latestMetadata = (entries: MetadataInfoResponse["data"][string]) =>
   [...entries].sort((first, second) => second.version.localeCompare(first.version, undefined, { numeric: true }))[0];
@@ -61,6 +62,7 @@ const RENEWAL_RUNBOOK_URL = "https://docs.redhat.com/en/documentation/red_hat_tr
 
 export const isUrgentExpiry = (asset: ExpiringTrustAsset, now = Date.now()) => {
   if (asset.status === "expired") return true;
+  if (asset.status === "active") return false;
 
   const expiration = expirationTimestamp(asset.expires);
   if (!Number.isFinite(expiration)) return true;
@@ -73,33 +75,39 @@ export const getExpiringTrustAssets = (
   metadataInfo?: MetadataInfoResponse | null,
   now = Date.now(),
 ): ExpiringTrustAsset[] => {
-  const certificateAssets = certificates
-    .filter((certificate): certificate is CertificateInfo & { status: ExpiringTrustAsset["status"] } =>
-      isExpiryWarning(certificate.status),
-    )
-    .map((certificate) => ({
-      id: ["certificate", certificate.target, certificate.certExpiration, certificate.subject].join("-"),
-      name: certificate.target,
-      status: effectiveExpiryStatus(certificate.status, certificate.certExpiration, now),
-      expires: certificate.certExpiration,
-    }));
+  const certificateAssets = certificates.flatMap((certificate) => {
+    const status = effectiveExpiryStatus(certificate.status, certificate.certExpiration, now);
+    if (!status) return [];
+
+    return [
+      {
+        id: ["certificate", certificate.target, certificate.certExpiration, certificate.subject].join("-"),
+        name: certificate.target,
+        status,
+        expires: certificate.certExpiration,
+      },
+    ];
+  });
 
   const metadataAssets = Object.entries(metadataInfo?.data ?? {}).flatMap(([role, entries]) => {
     const metadata = latestMetadata(entries);
-    if (!metadata || !isExpiryWarning(metadata.status)) return [];
+    if (!metadata) return [];
+    const status = effectiveExpiryStatus(metadata.status, metadata.expires, now);
+    if (!status) return [];
 
     return [
       {
         id: `metadata-${role}-${metadata.version}`,
         name: `TUF ${role} metadata`,
-        status: effectiveExpiryStatus(metadata.status, metadata.expires, now),
+        status,
         expires: metadata.expires,
       },
     ];
   });
 
   return [...certificateAssets, ...metadataAssets].sort((first, second) => {
-    if (first.status !== second.status) return first.status === "expired" ? -1 : 1;
+    const statusOrder = { expired: 0, expiring: 1, active: 2 };
+    if (first.status !== second.status) return statusOrder[first.status] - statusOrder[second.status];
     const expirationDifference = expirationTimestamp(first.expires) - expirationTimestamp(second.expires);
     return expirationDifference || first.name.localeCompare(second.name);
   });
@@ -254,7 +262,7 @@ export const ExpiringTrustAssets: React.FC<ExpiringTrustAssetsProps> = ({
                   headingLevel="h3"
                   status="success"
                 >
-                  <EmptyStateBody>No certificates or TUF metadata currently need attention.</EmptyStateBody>
+                  <EmptyStateBody>No trust assets with expiry information are currently available.</EmptyStateBody>
                 </EmptyState>
               </StackItem>
             )}
