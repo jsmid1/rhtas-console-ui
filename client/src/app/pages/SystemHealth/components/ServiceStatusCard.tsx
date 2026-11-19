@@ -5,9 +5,10 @@ import { statusColor, statusLabel, statusToSeverity, type ServiceStatus } from "
 interface ServiceStatusCardProps {
   name: string;
   status: ServiceStatus;
+  summary?: string;
 }
 
-export const ServiceStatusCard: React.FC<ServiceStatusCardProps> = ({ name, status }) => (
+export const ServiceStatusCard: React.FC<ServiceStatusCardProps> = ({ name, status, summary }) => (
   <Card isFullHeight aria-label={`${name} status`}>
     <CardBody>
       <Flex alignItems={{ default: "alignItemsCenter" }} spaceItems={{ default: "spaceItemsSm" }}>
@@ -23,6 +24,7 @@ export const ServiceStatusCard: React.FC<ServiceStatusCardProps> = ({ name, stat
       <Content component="p" style={{ color: statusColor(status), marginTop: "var(--pf-t--global--spacer--sm)" }}>
         {statusLabel(status)}
       </Content>
+      {summary && <Content component="small">{summary}</Content>}
     </CardBody>
   </Card>
 );

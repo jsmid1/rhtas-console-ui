@@ -70,6 +70,14 @@ describe("SystemHealth", () => {
     expect(screen.queryByRole("heading", { name: /Expiring trust assets/i })).not.toBeInTheDocument();
   });
 
+  test("renders live probe details for actively probed services", () => {
+    render(<SystemHealth />);
+
+    expect(within(screen.getByLabelText("Fulcio status")).getByText("p95 92ms · 0.0% errors")).toBeInTheDocument();
+    expect(within(screen.getByLabelText("Rekor status")).getByText("p95 210ms · 0.0% errors")).toBeInTheDocument();
+    expect(within(screen.getByLabelText("TUF status")).getByText("p95 110ms · 0.0% errors")).toBeInTheDocument();
+  });
+
   test("derives a degraded state from an unhealthy visible component", () => {
     // The deprecated flat field remains healthy; the service entry is authoritative.
     setQueryState({}, withServiceStatus("fulcio", "unhealthy"));
