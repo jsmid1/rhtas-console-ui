@@ -26,7 +26,7 @@ services:
         condition: service_started
   
   playwright:
-    image: mcr.microsoft.com/playwright:v1.61.1-jammy
+    image: mcr.microsoft.com/playwright:v1.65.0-jammy
     ports:
       - "5000:5000"
     network_mode: host
@@ -34,5 +34,5 @@ services:
     command:
       - /bin/sh
       - -c
-      - npx -y playwright@1.61.1 run-server --port 5000
+      - npx -y playwright@1.65.0 run-server --port 5000
 
