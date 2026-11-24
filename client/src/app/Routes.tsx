@@ -12,6 +12,7 @@ const TrustRoot = lazy(() => import("./pages/TrustRoot"));
 const RekorSearch = lazy(() => import("./pages/Rekor/RekorSearch"));
 const RekorEntry = lazy(() => import("./pages/Rekor/RekorEntry"));
 const Monitoring = lazy(() => import("./pages/Monitoring"));
+const SystemHealth = lazy(() => import("./pages/SystemHealth"));
 
 export const Paths = {
   artifacts: "/artifacts",
@@ -19,6 +20,7 @@ export const Paths = {
   rekorEntry: `/rekor-search/:logIndex`,
   trustRoot: "/trust-root",
   monitoringAlerting: "/monitoring",
+  systemHealth: "/system-health",
 } as const;
 
 export const AppRoutes = () => {
@@ -30,6 +32,7 @@ export const AppRoutes = () => {
     { path: Paths.artifacts, element: <Artifacts /> },
     { path: Paths.rekorSearch, element: <RekorSearch /> },
     { path: Paths.rekorEntry, element: <RekorEntry /> },
+    ...(features.observability ? [{ path: Paths.systemHealth, element: <SystemHealth /> }] : []),
     ...(features.monitoringAlerting ? [{ path: Paths.monitoringAlerting, element: <Monitoring /> }] : []),
     { path: "*", element: <NotFound /> },
   ]);

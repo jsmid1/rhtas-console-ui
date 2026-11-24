@@ -20,6 +20,9 @@ export interface ConsoleEnvType {
   /** Controls whether monitoring&alerting features are enabled */
   FEATURE_MONITORING: string;
 
+  /** Controls whether observability features (system health) are enabled */
+  FEATURE_OBSERVABILITY: string;
+
   /** UI upload file size limit in megabytes (MB), suffixed with "m" */
   UI_INGRESS_PROXY_BODY_SIZE: string;
 
@@ -51,6 +54,7 @@ export const buildConsoleEnv = ({
   VERSION = "99.0.0",
   MOCK = "off",
   FEATURE_MONITORING = "off",
+  FEATURE_OBSERVABILITY = "off",
 
   UI_INGRESS_PROXY_BODY_SIZE = "500m",
   CONSOLE_API_URL,
@@ -62,6 +66,7 @@ export const buildConsoleEnv = ({
   VERSION,
   MOCK,
   FEATURE_MONITORING,
+  FEATURE_OBSERVABILITY,
 
   UI_INGRESS_PROXY_BODY_SIZE,
   CONSOLE_API_URL,

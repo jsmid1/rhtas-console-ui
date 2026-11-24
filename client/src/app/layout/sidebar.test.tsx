@@ -3,7 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, test, vi } from "vitest";
 import { SidebarApp } from "./sidebar";
 
-const mockFeatures = { monitoringAlerting: false };
+const mockFeatures = { monitoringAlerting: false, observability: false };
 
 vi.mock("@app/hooks/useFeatureFlags", () => ({
   useFeatureFlags: () => ({ features: mockFeatures }),
@@ -38,5 +38,19 @@ describe("SidebarApp", () => {
     renderSidebar();
 
     expect(screen.getByRole("link", { name: "Monitoring" })).toBeInTheDocument();
+  });
+
+  test("hides System Health link when observability flag is off", () => {
+    mockFeatures.observability = false;
+    renderSidebar();
+
+    expect(screen.queryByRole("link", { name: "System Health" })).not.toBeInTheDocument();
+  });
+
+  test("shows System Health link when observability flag is on", () => {
+    mockFeatures.observability = true;
+    renderSidebar();
+
+    expect(screen.getByRole("link", { name: "System Health" })).toBeInTheDocument();
   });
 });

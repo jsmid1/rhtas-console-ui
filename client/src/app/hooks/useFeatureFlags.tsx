@@ -4,6 +4,7 @@ import { ENV } from "@app/env";
 interface FeatureFlagsContextType {
   features: {
     monitoringAlerting: boolean;
+    observability: boolean;
   };
 }
 
@@ -13,6 +14,7 @@ export const FeatureFlagsProvider = ({ children }: { children: ReactNode }) => {
   const features = useMemo(
     () => ({
       monitoringAlerting: ENV.FEATURE_MONITORING === "on",
+      observability: ENV.FEATURE_OBSERVABILITY === "on",
     }),
     [],
   );
