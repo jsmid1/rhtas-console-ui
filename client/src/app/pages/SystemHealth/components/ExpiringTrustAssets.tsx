@@ -45,7 +45,8 @@ const effectiveExpiryStatus = (
 ): ExpiringTrustAsset["status"] | null => {
   if (status === "expired" || expirationTimestamp(expires) <= now) return "expired";
   if (status === "expiring") return "expiring";
-  if (status === "active") return "active";
+  // Certificates use "active"; TUF metadata uses "valid" for the same normal state.
+  if (status === "active" || status === "valid") return "active";
   return null;
 };
 

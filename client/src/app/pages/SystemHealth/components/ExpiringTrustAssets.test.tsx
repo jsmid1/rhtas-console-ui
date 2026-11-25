@@ -1,5 +1,6 @@
 import type { CertificateInfo, MetadataInfoResponse } from "@app/client";
 import { render, screen, within } from "@testing-library/react";
+import { trustMetadataInfoMock } from "@app/queries/mocks/trust.mock";
 import { describe, expect, test, vi } from "vitest";
 import {
   ExpiringTrustAssets,
@@ -114,6 +115,35 @@ describe("ExpiringTrustAssets", () => {
         expect.objectContaining({ name: "fulcio.pem", status: "expired" }),
       ]),
     );
+  });
+
+  test("includes valid TUF metadata as active trust assets", () => {
+    expect(getExpiringTrustAssets([], trustMetadataInfoMock, Date.parse("2026-07-01T10:00:00Z"))).toEqual([
+      {
+        id: "metadata-timestamp-736",
+        name: "TUF timestamp metadata",
+        status: "expiring",
+        expires: "2026-07-30T08:02:24Z",
+      },
+      {
+        id: "metadata-root-3",
+        name: "TUF root metadata",
+        status: "active",
+        expires: "2026-11-20T13:58:18Z",
+      },
+      {
+        id: "metadata-targets-14",
+        name: "TUF targets metadata",
+        status: "active",
+        expires: "2036-05-09T09:00:52Z",
+      },
+      {
+        id: "metadata-snapshot-165",
+        name: "TUF snapshot metadata",
+        status: "active",
+        expires: "2036-05-15T08:09:16Z",
+      },
+    ]);
   });
 
   test("uses certificate chain identity from the trust API for stable keys", () => {
