@@ -27,6 +27,15 @@ export const systemHealthMock: SystemHealthResponse = {
     healthyService("tsa", true),
     healthyService("tuf", true),
   ],
+  // Monitoring not configured: no counts, nothing invented.
+  metrics: {
+    status: "disabled",
+    reason: null,
+    windowSeconds: 3600,
+    updatedAt: null,
+    errorRates: null,
+    signingActivity: null,
+  },
   probeIntervalSeconds: 30,
   windowSeconds: 3600,
   updatedAt: "2026-06-30T09:18:32.658987Z",
