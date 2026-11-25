@@ -24,6 +24,7 @@ import { formatRelativeTime } from "../utils";
 interface ExpiringTrustAsset {
   id: string;
   name: string;
+  description?: string;
   status: "active" | "expiring" | "expired";
   expires?: string;
 }
@@ -81,8 +82,17 @@ export const getExpiringTrustAssets = (
 
     return [
       {
-        id: ["certificate", certificate.target, certificate.certExpiration, certificate.subject].join("-"),
+        id: [
+          "certificate",
+          certificate.target,
+          certificate.role,
+          certificate.chainIndex,
+          certificate.serialNumber,
+          certificate.certExpiration,
+          certificate.subject,
+        ].join("-"),
         name: certificate.target,
+        description: `${certificate.role} certificate · serial ${certificate.serialNumber}`,
         status,
         expires: certificate.certExpiration,
       },
@@ -221,7 +231,9 @@ export const ExpiringTrustAssets: React.FC<ExpiringTrustAssetsProps> = ({
                           <FlexItem>
                             <Content component="p">{asset.name}</Content>
                             <Content component="small" style={{ color: "var(--pf-t--global--text--color--subtle)" }}>
-                              {expiryDescription(asset)}
+                              {asset.description
+                                ? `${asset.description} · ${expiryDescription(asset)}`
+                                : expiryDescription(asset)}
                             </Content>
                           </FlexItem>
                           <FlexItem>

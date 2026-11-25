@@ -8,25 +8,32 @@ import {
   isUrgentExpiry,
 } from "./ExpiringTrustAssets";
 
+const certificate = (overrides: Partial<CertificateInfo>): CertificateInfo => ({
+  target: "fulcio.pem",
+  status: "expiring",
+  certExpiration: "2026-12-01T10:00:00Z",
+  issuer: "CN=issuer",
+  subject: "CN=subject",
+  type: "Fulcio",
+  pem: "certificate",
+  role: "intermediate",
+  chainIndex: 0,
+  isCA: true,
+  serialNumber: "1234",
+  ...overrides,
+});
+
 const certificates: CertificateInfo[] = [
-  {
-    target: "fulcio.pem",
-    status: "expiring",
-    certExpiration: "2026-12-01T10:00:00Z",
-    issuer: "CN=issuer",
-    subject: "CN=subject",
-    type: "Fulcio",
-    pem: "certificate",
-  },
-  {
+  certificate({}),
+  certificate({
     target: "rekor.pem",
     status: "active",
     certExpiration: "2027-12-01T10:00:00Z",
-    issuer: "CN=issuer",
-    subject: "CN=subject",
     type: "Rekor",
-    pem: "certificate",
-  },
+    role: "root",
+    chainIndex: 1,
+    serialNumber: "5678",
+  }),
 ];
 
 const metadataInfo: MetadataInfoResponse = {
@@ -74,7 +81,7 @@ describe("ExpiringTrustAssets", () => {
   });
 
   test("uses the latest metadata version and includes active trust assets", () => {
-    expect(getExpiringTrustAssets(certificates, metadataInfo)).toEqual([
+    expect(getExpiringTrustAssets(certificates, metadataInfo, Date.parse("2026-11-03T10:00:00Z"))).toEqual([
       {
         id: "metadata-timestamp-3",
         name: "TUF timestamp metadata",
@@ -82,14 +89,16 @@ describe("ExpiringTrustAssets", () => {
         expires: "2026-11-20T00:00:00Z",
       },
       {
-        id: "certificate-fulcio.pem-2026-12-01T10:00:00Z-CN=subject",
+        id: "certificate-fulcio.pem-intermediate-0-1234-2026-12-01T10:00:00Z-CN=subject",
         name: "fulcio.pem",
+        description: "intermediate certificate · serial 1234",
         status: "expiring",
         expires: "2026-12-01T10:00:00Z",
       },
       {
-        id: "certificate-rekor.pem-2027-12-01T10:00:00Z-CN=subject",
+        id: "certificate-rekor.pem-root-1-5678-2027-12-01T10:00:00Z-CN=subject",
         name: "rekor.pem",
+        description: "root certificate · serial 5678",
         status: "active",
         expires: "2027-12-01T10:00:00Z",
       },
@@ -97,9 +106,29 @@ describe("ExpiringTrustAssets", () => {
   });
 
   test("normalizes past-due expiring records to expired", () => {
-    expect(getExpiringTrustAssets(certificates, metadataInfo, Date.parse("2026-12-02T00:00:00Z"))).toEqual([
-      expect.objectContaining({ name: "TUF timestamp metadata", status: "expired" }),
-      expect.objectContaining({ name: "fulcio.pem", status: "expired" }),
+    const assets = getExpiringTrustAssets(certificates, metadataInfo, Date.parse("2026-12-02T00:00:00Z"));
+
+    expect(assets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "TUF timestamp metadata", status: "expired" }),
+        expect.objectContaining({ name: "fulcio.pem", status: "expired" }),
+      ]),
+    );
+  });
+
+  test("uses certificate chain identity from the trust API for stable keys", () => {
+    const sameTargetCertificates = [
+      certificate({ serialNumber: "1111", role: "root", chainIndex: 0 }),
+      certificate({ serialNumber: "2222", role: "intermediate", chainIndex: 1 }),
+    ];
+
+    const assets = getExpiringTrustAssets(sameTargetCertificates, undefined);
+
+    expect(assets).toHaveLength(2);
+    expect(new Set(assets.map(({ id }) => id)).size).toBe(2);
+    expect(assets.map(({ description }) => description)).toEqual([
+      "root certificate · serial 1111",
+      "intermediate certificate · serial 2222",
     ]);
   });
 
@@ -109,6 +138,7 @@ describe("ExpiringTrustAssets", () => {
     render(
       <ExpiringTrustAssets
         {...defaultProps}
+        certificates={[certificate({})]}
         metadataInfo={{
           data: { root: [{ version: "1", status: "expired", expires: "2026-07-01T00:00:00Z" }] },
         }}
@@ -124,7 +154,7 @@ describe("ExpiringTrustAssets", () => {
     expect(screen.getByText("Expired Jul 01, 2026 · 1d ago")).toBeInTheDocument();
     expect(screen.getByText("Expired", { selector: "p" })).toBeInTheDocument();
     expect(screen.getByText("fulcio.pem")).toBeInTheDocument();
-    expect(screen.getByText("Expires Dec 01, 2026")).toBeInTheDocument();
+    expect(screen.getByText("intermediate certificate · serial 1234 · Expires Dec 01, 2026")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Renewal runbook →" })).toHaveAttribute(
       "href",
       "https://docs.redhat.com/en/documentation/red_hat_trusted_artifact_signer",
