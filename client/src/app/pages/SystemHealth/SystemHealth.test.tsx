@@ -1,7 +1,7 @@
 import { AxiosError } from "axios";
 import type { Error as ApiError, ServiceHealth, SystemHealthResponse } from "@app/client";
 import { systemHealthMock } from "@app/queries/mocks/system-health";
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { SystemHealth } from "./SystemHealth";
@@ -128,6 +128,57 @@ describe("SystemHealth", () => {
     render(<SystemHealth />);
 
     expect(within(screen.getByLabelText("Rekor status")).getByText("p95 210ms · <0.1% errors")).toBeInTheDocument();
+  });
+
+  test("opens the service-detail drawer when a service card is selected", async () => {
+    const user = userEvent.setup();
+    render(<SystemHealth />);
+
+    await user.click(screen.getByRole("button", { name: "Fulcio status" }));
+
+    const drawer = screen.getByRole("dialog", { name: "Service details" });
+    expect(within(drawer).getByRole("heading", { name: "Fulcio" })).toBeInTheDocument();
+    expect(within(drawer).getByText("Healthy")).toBeInTheDocument();
+    expect(within(drawer).getByText("No operational impact.")).toBeInTheDocument();
+    expect(within(drawer).getByText("HTTP probe")).toBeInTheDocument();
+    expect(within(drawer).getByText("p95 latency")).toBeInTheDocument();
+    expect(within(drawer).getByText("Probe error rate")).toBeInTheDocument();
+    expect(within(drawer).getByText("Probe count")).toBeInTheDocument();
+  });
+
+  test("closes the service-detail drawer from the close button", async () => {
+    const user = userEvent.setup();
+    render(<SystemHealth />);
+
+    await user.click(screen.getByRole("button", { name: "Rekor status" }));
+    await user.click(screen.getByRole("button", { name: "Close service details" }));
+
+    expect(screen.queryByRole("dialog", { name: "Service details" })).not.toBeInTheDocument();
+  });
+
+  test("closes the service-detail drawer with Escape", async () => {
+    const user = userEvent.setup();
+    render(<SystemHealth />);
+
+    await user.click(screen.getByRole("button", { name: "TUF status" }));
+    const drawer = screen.getByRole("dialog", { name: "Service details" });
+    fireEvent.keyDown(drawer, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog", { name: "Service details" })).not.toBeInTheDocument();
+  });
+
+  test("omits HTTP-only details for a condition-derived service", async () => {
+    const user = userEvent.setup();
+    render(<SystemHealth />);
+
+    await user.click(screen.getByRole("button", { name: "CT log status" }));
+
+    const drawer = screen.getByRole("dialog", { name: "Service details" });
+    expect(within(drawer).getByText("Condition-derived")).toBeInTheDocument();
+    expect(within(drawer).queryByText("Endpoint")).not.toBeInTheDocument();
+    expect(within(drawer).queryByText("p50 latency")).not.toBeInTheDocument();
+    expect(within(drawer).queryByText("p95 latency")).not.toBeInTheDocument();
+    expect(within(drawer).queryByText("Mean latency")).not.toBeInTheDocument();
   });
 
   test("derives a degraded state from an unhealthy visible component", () => {

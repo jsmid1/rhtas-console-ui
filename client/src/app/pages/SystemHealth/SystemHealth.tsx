@@ -22,22 +22,12 @@ import {
 import { ExclamationCircleIcon, SyncAltIcon } from "@patternfly/react-icons";
 import { useEffect, useState } from "react";
 import { ExpiringTrustAssets } from "./components/ExpiringTrustAssets";
+import { ServiceDetailDrawer, type ServiceDetailInfo } from "./components/ServiceDetailDrawer";
 import { ServiceStatusCard } from "./components/ServiceStatusCard";
 import { StatusDot } from "./components/StatusDot";
 import { SystemHealthBanner } from "./components/SystemHealthBanner";
-import {
-  dashboardStatusLabel,
-  formatErrorRate,
-  formatRelativeTime,
-  getDashboardStatus,
-  type ServiceStatus,
-} from "./utils";
-
-interface ServiceInfo {
-  name: string;
-  status: ServiceStatus;
-  details?: ServiceHealth;
-}
+import { dashboardStatusLabel, formatErrorRate, formatRelativeTime, getDashboardStatus } from "./utils";
+type ServiceInfo = ServiceDetailInfo;
 
 interface LastCheckedProps {
   updatedAt?: string | null;
@@ -92,9 +82,9 @@ export const SystemHealth: React.FC = () => {
   } = useFetchTrustMetadataInfo();
 
   const servicesByName = new Map(data?.services?.map((service) => [service.name, service]));
-  const serviceInfo = (name: ServiceHealth["name"], label: string): ServiceInfo => {
-    const details = servicesByName.get(name);
-    return { name: label, status: details?.status ?? "unknown", details };
+  const serviceInfo = (id: ServiceHealth["name"], label: string): ServiceInfo => {
+    const details = servicesByName.get(id);
+    return { id, name: label, status: details?.status ?? "unknown", details };
   };
   const visibleServices = [
     serviceInfo("fulcio", "Fulcio"),
@@ -118,144 +108,157 @@ export const SystemHealth: React.FC = () => {
     void Promise.allSettled([refetch(), refetchCertificates(), refetchMetadata()]);
   };
 
+  const [selectedServiceName, setSelectedServiceName] = useState<string | null>(null);
+  const selectedService = visibleServices.find(({ name }) => name === selectedServiceName) ?? null;
+
   return (
-    <>
-      <DocumentMetadata title="System Health" />
-      <PageSection>
-        <Flex justifyContent={{ default: "justifyContentSpaceBetween" }} alignItems={{ default: "alignItemsCenter" }}>
-          <FlexItem>
-            <Content>
-              <Content component="h1">System Health</Content>
-              <Content component="p">
-                Monitor service health, track expiring trust assets, and investigate signing failures from one place
-              </Content>
-            </Content>
-          </FlexItem>
-          {data && (
-            <FlexItem>
-              <Flex alignItems={{ default: "alignItemsCenter" }} spaceItems={{ default: "spaceItemsMd" }}>
-                <FlexItem>
-                  <Content component="small">{dashboardStatusLabel(overallStatus)}</Content>
-                </FlexItem>
-                <FlexItem>
-                  <Flex alignItems={{ default: "alignItemsCenter" }} spaceItems={{ default: "spaceItemsXs" }}>
-                    <FlexItem>
-                      <StatusDot severity={refreshFailed ? "warning" : "success"} />
-                    </FlexItem>
-                    <FlexItem>
-                      <Content component="small">{refreshFailed ? "Refresh failed" : "Dashboard online"}</Content>
-                    </FlexItem>
-                  </Flex>
-                </FlexItem>
-                <FlexItem>
-                  <Content component="small" style={{ color: "var(--pf-t--global--text--color--subtle)" }}>
-                    <LastChecked updatedAt={data.updatedAt} />
-                  </Content>
-                </FlexItem>
-                <FlexItem>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    icon={<SyncAltIcon />}
-                    isLoading={isRefreshing}
-                    isDisabled={isRefreshing}
-                    onClick={handleRefresh}
-                  >
-                    Refresh
-                  </Button>
-                </FlexItem>
-              </Flex>
-            </FlexItem>
-          )}
-        </Flex>
-      </PageSection>
-      <LoadingWrapper
-        fetchError={data ? null : fetchError}
-        isFetching={isLoading}
-        fetchErrorState={() => (
-          <PageSection>
-            <Bullseye>
-              <EmptyState
-                status="danger"
-                headingLevel="h2"
-                titleText="Unable to connect"
-                icon={ExclamationCircleIcon}
-                variant={EmptyStateVariant.sm}
-              >
-                <EmptyStateBody>
-                  There was an error retrieving data. Check your connection and try again.
-                </EmptyStateBody>
-                <Button variant="primary" isLoading={isRefreshing} isDisabled={isRefreshing} onClick={handleRefresh}>
-                  Retry
-                </Button>
-              </EmptyState>
-            </Bullseye>
-          </PageSection>
-        )}
-      >
+    <ServiceDetailDrawer
+      service={selectedService ?? undefined}
+      isExpanded={selectedService !== null}
+      onClose={() => setSelectedServiceName(null)}
+      isLoading={isLoading}
+      fetchError={fetchError}
+    >
+      <>
+        <DocumentMetadata title="System Health" />
         <PageSection>
-          {data ? (
-            <Stack hasGutter>
-              {Boolean(fetchError) && (
-                <StackItem>
-                  <Alert isInline variant="warning" title="Unable to refresh system health">
-                    Showing the last successfully retrieved status.
-                  </Alert>
-                </StackItem>
-              )}
-              {overallStatus !== "Healthy" && (
-                <StackItem>
-                  <SystemHealthBanner
-                    overallStatus={overallStatus}
-                    services={monitoredServices}
-                    securesignStatus={securesignStatus}
-                    securesignStatusReason={securesignStatusReason}
-                  />
-                </StackItem>
-              )}
-              <StackItem>
-                <Grid hasGutter>
-                  {visibleServices.map((service) => (
-                    <GridItem key={service.name} span={12} sm={6} lg={4}>
-                      <ServiceStatusCard
-                        name={service.name}
-                        status={service.status}
-                        summary={serviceSummary(service.details)}
-                      />
-                    </GridItem>
-                  ))}
-                </Grid>
-              </StackItem>
-              <StackItem>
-                <Grid hasGutter>
-                  <GridItem span={12} lg={6}>
-                    <ExpiringTrustAssets
-                      certificates={certificates?.data}
-                      metadataInfo={metadataInfo}
-                      isFetchingCertificates={isFetchingCertificates}
-                      isFetchingMetadata={isFetchingMetadata}
-                      certificatesFetchError={certificatesFetchError}
-                      metadataFetchError={metadataFetchError}
-                    />
-                  </GridItem>
-                </Grid>
-              </StackItem>
-            </Stack>
-          ) : (
-            !isLoading &&
-            !fetchError && (
+          <Flex justifyContent={{ default: "justifyContentSpaceBetween" }} alignItems={{ default: "alignItemsCenter" }}>
+            <FlexItem>
+              <Content>
+                <Content component="h1">System Health</Content>
+                <Content component="p">
+                  Monitor service health, track expiring trust assets, and investigate signing failures from one place
+                </Content>
+              </Content>
+            </FlexItem>
+            {data && (
+              <FlexItem>
+                <Flex alignItems={{ default: "alignItemsCenter" }} spaceItems={{ default: "spaceItemsMd" }}>
+                  <FlexItem>
+                    <Content component="small">{dashboardStatusLabel(overallStatus)}</Content>
+                  </FlexItem>
+                  <FlexItem>
+                    <Flex alignItems={{ default: "alignItemsCenter" }} spaceItems={{ default: "spaceItemsXs" }}>
+                      <FlexItem>
+                        <StatusDot severity={refreshFailed ? "warning" : "success"} />
+                      </FlexItem>
+                      <FlexItem>
+                        <Content component="small">{refreshFailed ? "Refresh failed" : "Dashboard online"}</Content>
+                      </FlexItem>
+                    </Flex>
+                  </FlexItem>
+                  <FlexItem>
+                    <Content component="small" style={{ color: "var(--pf-t--global--text--color--subtle)" }}>
+                      <LastChecked updatedAt={data.updatedAt} />
+                    </Content>
+                  </FlexItem>
+                  <FlexItem>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<SyncAltIcon />}
+                      isLoading={isRefreshing}
+                      isDisabled={isRefreshing}
+                      onClick={handleRefresh}
+                    >
+                      Refresh
+                    </Button>
+                  </FlexItem>
+                </Flex>
+              </FlexItem>
+            )}
+          </Flex>
+        </PageSection>
+        <LoadingWrapper
+          fetchError={data ? null : fetchError}
+          isFetching={isLoading}
+          fetchErrorState={() => (
+            <PageSection>
               <Bullseye>
-                <EmptyState titleText="No health data available" headingLevel="h2">
-                  <EmptyStateBody>Refresh to request the latest TAS service status.</EmptyStateBody>
-                  <Button variant="primary" onClick={handleRefresh}>
-                    Refresh
+                <EmptyState
+                  status="danger"
+                  headingLevel="h2"
+                  titleText="Unable to connect"
+                  icon={ExclamationCircleIcon}
+                  variant={EmptyStateVariant.sm}
+                >
+                  <EmptyStateBody>
+                    There was an error retrieving data. Check your connection and try again.
+                  </EmptyStateBody>
+                  <Button variant="primary" isLoading={isRefreshing} isDisabled={isRefreshing} onClick={handleRefresh}>
+                    Retry
                   </Button>
                 </EmptyState>
               </Bullseye>
-            )
+            </PageSection>
           )}
-        </PageSection>
-      </LoadingWrapper>
-    </>
+        >
+          <PageSection>
+            {data ? (
+              <Stack hasGutter>
+                {Boolean(fetchError) && (
+                  <StackItem>
+                    <Alert isInline variant="warning" title="Unable to refresh system health">
+                      Showing the last successfully retrieved status.
+                    </Alert>
+                  </StackItem>
+                )}
+                {overallStatus !== "Healthy" && (
+                  <StackItem>
+                    <SystemHealthBanner
+                      overallStatus={overallStatus}
+                      services={monitoredServices}
+                      securesignStatus={securesignStatus}
+                      securesignStatusReason={securesignStatusReason}
+                    />
+                  </StackItem>
+                )}
+                <StackItem>
+                  <Grid hasGutter>
+                    {visibleServices.map((service) => (
+                      <GridItem key={service.name} span={12} sm={6} lg={4}>
+                        <ServiceStatusCard
+                          name={service.name}
+                          status={service.status}
+                          summary={serviceSummary(service.details)}
+                          onClick={() => setSelectedServiceName(service.name)}
+                          isSelected={selectedServiceName === service.name}
+                        />
+                      </GridItem>
+                    ))}
+                  </Grid>
+                </StackItem>
+                <StackItem>
+                  <Grid hasGutter>
+                    <GridItem span={12} lg={6}>
+                      <ExpiringTrustAssets
+                        certificates={certificates?.data}
+                        metadataInfo={metadataInfo}
+                        isFetchingCertificates={isFetchingCertificates}
+                        isFetchingMetadata={isFetchingMetadata}
+                        certificatesFetchError={certificatesFetchError}
+                        metadataFetchError={metadataFetchError}
+                      />
+                    </GridItem>
+                  </Grid>
+                </StackItem>
+              </Stack>
+            ) : (
+              !isLoading &&
+              !fetchError && (
+                <Bullseye>
+                  <EmptyState titleText="No health data available" headingLevel="h2">
+                    <EmptyStateBody>Refresh to request the latest TAS service status.</EmptyStateBody>
+                    <Button variant="primary" onClick={handleRefresh}>
+                      Refresh
+                    </Button>
+                  </EmptyState>
+                </Bullseye>
+              )
+            )}
+          </PageSection>
+        </LoadingWrapper>
+      </>
+    </ServiceDetailDrawer>
   );
 };

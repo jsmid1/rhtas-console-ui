@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, test, vi } from "vitest";
 import { ServiceStatusCard } from "./ServiceStatusCard";
 
 describe("ServiceStatusCard", () => {
@@ -17,6 +18,16 @@ describe("ServiceStatusCard", () => {
     rerender(<ServiceStatusCard name="TUF" status="unknown" />);
 
     expect(screen.getByLabelText("TUF status")).toHaveTextContent("Unknown");
+  });
+
+  test("opens service details when the card is clicked", async () => {
+    const onClick = vi.fn();
+    const user = userEvent.setup();
+    render(<ServiceStatusCard name="Fulcio" status="healthy" onClick={onClick} />);
+
+    await user.click(screen.getByRole("button", { name: "Fulcio status" }));
+
+    expect(onClick).toHaveBeenCalledOnce();
   });
 
   test("renders a live probe summary when supplied", () => {

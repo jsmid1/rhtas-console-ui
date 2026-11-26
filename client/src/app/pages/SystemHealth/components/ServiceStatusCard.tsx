@@ -6,10 +6,23 @@ interface ServiceStatusCardProps {
   name: string;
   status: ServiceStatus;
   summary?: string;
+  onClick?: () => void;
+  isSelected?: boolean;
 }
 
-export const ServiceStatusCard: React.FC<ServiceStatusCardProps> = ({ name, status, summary }) => (
-  <Card isFullHeight aria-label={`${name} status`}>
+export const ServiceStatusCard: React.FC<ServiceStatusCardProps> = ({ name, status, summary, onClick, isSelected }) => (
+  <Card
+    isFullHeight
+    aria-label={`${name} status`}
+    component={onClick ? "button" : "div"}
+    isClickable={Boolean(onClick)}
+    isSelected={isSelected}
+    onClick={onClick}
+    type={onClick ? "button" : undefined}
+    aria-haspopup={onClick ? "dialog" : undefined}
+    aria-expanded={onClick ? Boolean(isSelected) : undefined}
+    aria-controls={onClick ? "system-health-service-detail-drawer" : undefined}
+  >
     <CardBody>
       <Flex alignItems={{ default: "alignItemsCenter" }} spaceItems={{ default: "spaceItemsSm" }}>
         <FlexItem>
