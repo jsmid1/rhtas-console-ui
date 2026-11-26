@@ -13,11 +13,11 @@ import { DocumentMetadata } from "@app/components/DocumentMetadata";
 import { LoadingWrapper } from "@app/components/LoadingWrapper";
 
 export const TrustRoots: React.FC = () => {
-  const { metadataInfo, isFetching: isFetchingMetadata, fetchError: fetchErrorMetadata } = useFetchTrustMetadataInfo();
+  const { metadataInfo, isLoading: isLoadingMetadata, fetchError: fetchErrorMetadata } = useFetchTrustMetadataInfo();
 
   const {
     certificates,
-    isFetching: isFetchingCertificates,
+    isLoading: isLoadingCertificates,
     fetchError: fetchErrorCertificates,
   } = useFetchTrustTargetCertificates();
 
@@ -78,7 +78,7 @@ export const TrustRoots: React.FC = () => {
         <TabContent eventKey={0} id="overviewTabSection" ref={overviewTabRef} aria-label="Overview">
           <Overview
             certificates={certificates?.data ?? []}
-            isFetching={isFetchingCertificates}
+            isFetching={isLoadingCertificates}
             fetchError={fetchErrorCertificates}
             rootLink={metadataInfo?.["repo-url"]}
           />
@@ -86,12 +86,12 @@ export const TrustRoots: React.FC = () => {
         <TabContent eventKey={1} id="certificatesTabSection" ref={certificatesTabRef} aria-label="Certificates" hidden>
           <CertificatesTable
             certificates={certificates?.data ?? []}
-            isFetching={isFetchingCertificates}
+            isFetching={isLoadingCertificates}
             fetchError={fetchErrorCertificates}
           />
         </TabContent>
         <TabContent eventKey={2} id="rootDetailsTabSection" ref={rootDetailsTabRef} aria-label="Metadata" hidden>
-          <LoadingWrapper isFetching={isFetchingMetadata} fetchError={fetchErrorMetadata}>
+          <LoadingWrapper isFetching={isLoadingMetadata} fetchError={fetchErrorMetadata}>
             {metadataInfo ? (
               <RootDetails metadataInfo={metadataInfo} />
             ) : (
