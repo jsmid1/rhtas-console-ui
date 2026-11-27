@@ -1,13 +1,14 @@
 import type { ServiceHealth, SystemHealthResponse } from "@app/client";
 
-const healthyService = (name: ServiceHealth["name"], probed: boolean): ServiceHealth => ({
+const healthyService = (name: ServiceHealth["name"], probed: boolean, latencyP95Ms?: number): ServiceHealth => ({
   name,
   status: "healthy",
   probed,
+  latencyP95Ms,
   errorRate: 0,
   uptimePercentage: 100,
   consecutiveFailures: 0,
-  probeCount: 1,
+  probeCount: 120,
 });
 
 export const systemHealthMock: SystemHealthResponse = {
@@ -20,12 +21,12 @@ export const systemHealthMock: SystemHealthResponse = {
   tsaStatus: "healthy",
   tufStatus: "healthy",
   services: [
-    healthyService("rekor", true),
-    healthyService("fulcio", true),
+    healthyService("rekor", true, 210),
+    healthyService("fulcio", true, 92),
     healthyService("ctlog", false),
     healthyService("trillian", false),
-    healthyService("tsa", true),
-    healthyService("tuf", true),
+    healthyService("tsa", true, 304),
+    healthyService("tuf", true, 110),
   ],
   // Monitoring not configured: no counts, nothing invented.
   metrics: {

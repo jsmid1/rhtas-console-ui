@@ -37,6 +37,11 @@ const withServiceStatus = (name: ServiceHealth["name"], status: ServiceHealth["s
   services: healthyResponse.services.map((service) => (service.name === name ? { ...service, status } : service)),
 });
 
+const withServiceErrorRate = (name: ServiceHealth["name"], errorRate: number): SystemHealthResponse => ({
+  ...healthyResponse,
+  services: healthyResponse.services.map((service) => (service.name === name ? { ...service, errorRate } : service)),
+});
+
 const setQueryState = (
   overrides: Partial<ReturnType<typeof useFetchSystemHealth>> = {},
   data: SystemHealthResponse | null | undefined = healthyResponse,
@@ -96,6 +101,10 @@ describe("SystemHealth", () => {
     expect(screen.getByLabelText("Fulcio status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("Rekor status")).toHaveTextContent("Healthy");
     expect(screen.getByLabelText("TUF status")).toHaveTextContent("Healthy");
+    expect(screen.getByLabelText("CT log status")).toHaveTextContent("Healthy");
+    expect(screen.getByLabelText("Trillian status")).toHaveTextContent("Healthy");
+    expect(screen.getByLabelText("TSA status")).toHaveTextContent("Healthy");
+    expect(screen.getByLabelText("TSA status")).toHaveTextContent("p95 304ms · 0.0% errors");
     expect(screen.getByLabelText("Fulcio status").parentElement).toHaveClass("pf-m-4-col-on-lg");
     expect(screen.queryByText("Overall signing system")).not.toBeInTheDocument();
     expect(screen.queryByText(/mock data/i)).not.toBeInTheDocument();
@@ -103,6 +112,22 @@ describe("SystemHealth", () => {
     expect(screen.queryByRole("heading", { name: /Incident timeline/i })).not.toBeInTheDocument();
     expect(screen.getByText("Expiring trust assets")).toBeInTheDocument();
     expect(screen.getByText("No expiry warnings")).toBeInTheDocument();
+  });
+
+  test("renders live probe details for actively probed services", () => {
+    render(<SystemHealth />);
+
+    expect(within(screen.getByLabelText("Fulcio status")).getByText("p95 92ms · 0.0% errors")).toBeInTheDocument();
+    expect(within(screen.getByLabelText("Rekor status")).getByText("p95 210ms · 0.0% errors")).toBeInTheDocument();
+    expect(within(screen.getByLabelText("TUF status")).getByText("p95 110ms · 0.0% errors")).toBeInTheDocument();
+  });
+
+  test("does not render a positive error rate as zero", () => {
+    setQueryState({}, withServiceErrorRate("rekor", 0.0001));
+
+    render(<SystemHealth />);
+
+    expect(within(screen.getByLabelText("Rekor status")).getByText("p95 210ms · <0.1% errors")).toBeInTheDocument();
   });
 
   test("derives a degraded state from an unhealthy visible component", () => {

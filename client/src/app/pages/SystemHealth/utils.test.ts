@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   dashboardStatusLabel,
+  formatErrorRate,
   formatRelativeTime,
   getDashboardStatus,
   getOverallStatus,
@@ -55,6 +56,15 @@ describe("statusLabel", () => {
     expect(statusLabel("healthy")).toBe("Healthy");
     expect(statusLabel("unhealthy")).toBe("Down");
     expect(statusLabel("unknown")).toBe("Unknown");
+  });
+});
+
+describe("formatErrorRate", () => {
+  it("keeps exact zero distinct from a positive rate that rounds to zero", () => {
+    expect(formatErrorRate(0)).toBe("0.0%");
+    expect(formatErrorRate(0.0001)).toBe("<0.1%");
+    expect(formatErrorRate(0.001)).toBe("0.1%");
+    expect(formatErrorRate(0.25)).toBe("25.0%");
   });
 });
 

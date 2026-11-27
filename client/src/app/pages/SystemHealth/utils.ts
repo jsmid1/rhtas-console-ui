@@ -58,6 +58,11 @@ export function overallStatusToSeverity(status: OverallStatus): Severity {
   }
 }
 
+export function formatErrorRate(errorRate: number): string {
+  const percentage = (errorRate * 100).toFixed(1);
+  return errorRate > 0 && percentage === "0.0" ? "<0.1%" : `${percentage}%`;
+}
+
 export function statusLabel(status: ServiceStatus): string {
   switch (status) {
     case "healthy":
