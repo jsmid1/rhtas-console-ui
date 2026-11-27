@@ -1,6 +1,6 @@
 import { AxiosError } from "axios";
 import type { Error as ApiError, ServiceHealth, SystemHealthResponse } from "@app/client";
-import { systemHealthMock } from "@app/queries/mocks/system-health";
+import { systemHealthHistoryMock, systemHealthMock } from "@app/queries/mocks/system-health";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -16,6 +16,7 @@ const mockRefetchMetadata = vi.fn();
 
 vi.mock("@app/queries/system-health", () => ({
   useFetchSystemHealth: vi.fn(),
+  useFetchSystemHealthHistory: vi.fn(),
 }));
 
 vi.mock("@app/queries/trust", () => ({
@@ -23,10 +24,11 @@ vi.mock("@app/queries/trust", () => ({
   useFetchTrustTargetCertificates: vi.fn(),
 }));
 
-import { useFetchSystemHealth } from "@app/queries/system-health";
+import { useFetchSystemHealth, useFetchSystemHealthHistory } from "@app/queries/system-health";
 import { useFetchTrustMetadataInfo, useFetchTrustTargetCertificates } from "@app/queries/trust";
 
 const mockUseFetchSystemHealth = vi.mocked(useFetchSystemHealth);
+const mockUseFetchSystemHealthHistory = vi.mocked(useFetchSystemHealthHistory);
 const mockUseFetchTrustMetadataInfo = vi.mocked(useFetchTrustMetadataInfo);
 const mockUseFetchTrustTargetCertificates = vi.mocked(useFetchTrustTargetCertificates);
 
@@ -56,6 +58,20 @@ const setQueryState = (
   } as ReturnType<typeof useFetchSystemHealth>);
 };
 
+const setHistoryQueryState = (
+  overrides: Partial<ReturnType<typeof useFetchSystemHealthHistory>> = {},
+  data: SystemHealthResponse | null | undefined = systemHealthHistoryMock,
+) => {
+  mockUseFetchSystemHealthHistory.mockReturnValue({
+    data,
+    isLoading: false,
+    isFetching: false,
+    error: null,
+    refetch: mockRefetch,
+    ...overrides,
+  } as ReturnType<typeof useFetchSystemHealthHistory>);
+};
+
 const setTrustQueryState = (
   certificateOverrides: Partial<ReturnType<typeof useFetchTrustTargetCertificates>> = {},
   metadataOverrides: Partial<ReturnType<typeof useFetchTrustMetadataInfo>> = {},
@@ -82,6 +98,7 @@ describe("SystemHealth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setQueryState();
+    setHistoryQueryState();
     setTrustQueryState();
   });
 
@@ -138,12 +155,24 @@ describe("SystemHealth", () => {
 
     const drawer = screen.getByRole("dialog", { name: "Service details" });
     expect(within(drawer).getByRole("heading", { name: "Fulcio" })).toBeInTheDocument();
-    expect(within(drawer).getByText("Healthy")).toBeInTheDocument();
+    expect(within(drawer).getAllByText("Healthy").length).toBeGreaterThan(0);
     expect(within(drawer).getByText("No operational impact.")).toBeInTheDocument();
-    expect(within(drawer).getByText("HTTP probe")).toBeInTheDocument();
+    expect(within(drawer).getAllByText("HTTP probe").length).toBeGreaterThan(0);
     expect(within(drawer).getByText("p95 latency")).toBeInTheDocument();
     expect(within(drawer).getByText("Probe error rate")).toBeInTheDocument();
     expect(within(drawer).getByText("Probe count")).toBeInTheDocument();
+  });
+
+  test("loads probe history for the selected service", async () => {
+    const user = userEvent.setup();
+    render(<SystemHealth />);
+
+    await user.click(screen.getByRole("button", { name: "Rekor status" }));
+
+    const drawer = screen.getByRole("dialog", { name: "Service details" });
+    expect(within(drawer).getByRole("grid", { name: "Rekor probe history" })).toBeInTheDocument();
+    expect(within(drawer).getByText("208ms")).toBeInTheDocument();
+    expect(within(drawer).getAllByText("HTTP probe").length).toBeGreaterThan(0);
   });
 
   test("closes the service-detail drawer from the close button", async () => {

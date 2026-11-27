@@ -1,4 +1,4 @@
-import type { ServiceHealth } from "@app/client";
+import type { ProbeSample, ServiceHealth } from "@app/client";
 import { formatDate } from "@app/utils/utils";
 import {
   Alert,
@@ -26,6 +26,7 @@ import {
   Title,
 } from "@patternfly/react-core";
 import { ExclamationCircleIcon } from "@patternfly/react-icons";
+import { ServiceProbeHistory } from "./ServiceProbeHistory";
 import { StatusDot } from "./StatusDot";
 import { formatRelativeTime, statusLabel, statusToSeverity, type ServiceStatus } from "../utils";
 
@@ -43,6 +44,9 @@ interface ServiceDetailDrawerProps {
   onClose: () => void;
   isLoading?: boolean;
   fetchError?: unknown;
+  history?: ProbeSample[];
+  isFetchingHistory?: boolean;
+  historyError?: unknown;
 }
 
 const serviceImpact: Record<ServiceDetailInfo["id"], string> = {
@@ -92,6 +96,9 @@ export const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
   onClose,
   isLoading = false,
   fetchError,
+  history,
+  isFetchingHistory = false,
+  historyError,
 }) => {
   const failingChecks = service ? getFailingChecks(service) : undefined;
 
@@ -286,6 +293,12 @@ export const ServiceDetailDrawer: React.FC<ServiceDetailDrawerProps> = ({
                       </DescriptionListDescription>
                     </DescriptionListGroup>
                   </DescriptionList>
+                  <ServiceProbeHistory
+                    serviceName={service.name}
+                    samples={history}
+                    isFetching={isFetchingHistory}
+                    fetchError={historyError}
+                  />
                 </>
               )}
             </DrawerPanelBody>

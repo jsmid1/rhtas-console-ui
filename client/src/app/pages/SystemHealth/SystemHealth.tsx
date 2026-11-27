@@ -1,7 +1,7 @@
 import { DocumentMetadata } from "@app/components/DocumentMetadata";
 import { LoadingWrapper } from "@app/components/LoadingWrapper";
 import type { ServiceHealth } from "@app/client";
-import { useFetchSystemHealth } from "@app/queries/system-health";
+import { useFetchSystemHealth, useFetchSystemHealthHistory } from "@app/queries/system-health";
 import { useFetchTrustMetadataInfo, useFetchTrustTargetCertificates } from "@app/queries/trust";
 import {
   Alert,
@@ -110,6 +110,15 @@ export const SystemHealth: React.FC = () => {
 
   const [selectedServiceName, setSelectedServiceName] = useState<string | null>(null);
   const selectedService = visibleServices.find(({ name }) => name === selectedServiceName) ?? null;
+  const {
+    data: historyData,
+    isLoading: isLoadingHistory,
+    isFetching: isFetchingHistory,
+    fetchError: historyError,
+  } = useFetchSystemHealthHistory({ enabled: selectedService !== null });
+  const selectedServiceHistory = historyData?.services?.find(
+    (service) => service.name === selectedService?.id,
+  )?.probeHistory;
 
   return (
     <ServiceDetailDrawer
@@ -118,6 +127,9 @@ export const SystemHealth: React.FC = () => {
       onClose={() => setSelectedServiceName(null)}
       isLoading={isLoading}
       fetchError={fetchError}
+      history={selectedServiceHistory}
+      isFetchingHistory={isLoadingHistory || isFetchingHistory}
+      historyError={historyError}
     >
       <>
         <DocumentMetadata title="System Health" />

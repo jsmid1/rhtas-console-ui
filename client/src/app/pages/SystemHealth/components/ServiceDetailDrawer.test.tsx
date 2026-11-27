@@ -119,6 +119,32 @@ describe("ServiceDetailDrawer", () => {
     expect(screen.getByText("Certificate issuance and signing trust are affected.")).toBeInTheDocument();
   });
 
+  test("renders probe history inside the service detail drawer", () => {
+    render(
+      <ServiceDetailDrawer
+        service={healthyService}
+        isExpanded
+        onClose={() => undefined}
+        history={[
+          {
+            timestamp: "2026-03-18T12:00:00Z",
+            status: "healthy",
+            success: true,
+            latencyMs: 41.2,
+            httpStatusCode: 200,
+            source: "http",
+            error: null,
+          },
+        ]}
+      >
+        <button type="button">Main content</button>
+      </ServiceDetailDrawer>,
+    );
+
+    expect(screen.getByRole("grid", { name: "Rekor probe history" })).toBeInTheDocument();
+    expect(screen.getByText("41ms")).toBeInTheDocument();
+  });
+
   test("closes from the close button", async () => {
     const onClose = vi.fn();
     render(
