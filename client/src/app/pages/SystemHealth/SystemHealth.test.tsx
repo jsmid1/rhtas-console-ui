@@ -1,6 +1,10 @@
 import { AxiosError } from "axios";
 import type { Error as ApiError, ServiceHealth, SystemHealthResponse } from "@app/client";
-import { systemHealthHistoryMock, systemHealthMock } from "@app/queries/mocks/system-health";
+import {
+  systemHealthHistoryMock,
+  systemHealthMetricsAvailableMock,
+  systemHealthMock,
+} from "@app/queries/mocks/system-health";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -161,6 +165,17 @@ describe("SystemHealth", () => {
     expect(within(drawer).getByText("p95 latency")).toBeInTheDocument();
     expect(within(drawer).getByText("Probe error rate")).toBeInTheDocument();
     expect(within(drawer).getByText("Probe count")).toBeInTheDocument();
+  });
+
+  test("renders live signing metrics when Prometheus data is available", () => {
+    setQueryState({}, systemHealthMetricsAvailableMock);
+
+    render(<SystemHealth />);
+
+    expect(screen.getByRole("heading", { name: "Signing metrics" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Error rate · last 1h" })).toBeInTheDocument();
+    expect(screen.getByText("42.7%")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Signing activity · last 1h" })).toBeInTheDocument();
   });
 
   test("loads probe history for the selected service", async () => {

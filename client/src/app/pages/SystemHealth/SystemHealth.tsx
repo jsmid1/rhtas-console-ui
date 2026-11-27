@@ -23,6 +23,7 @@ import { ExclamationCircleIcon, SyncAltIcon } from "@patternfly/react-icons";
 import { useEffect, useState } from "react";
 import { ExpiringTrustAssets } from "./components/ExpiringTrustAssets";
 import { ServiceDetailDrawer, type ServiceDetailInfo } from "./components/ServiceDetailDrawer";
+import { SystemHealthMetrics } from "./components/SystemHealthMetrics";
 import { ServiceStatusCard } from "./components/ServiceStatusCard";
 import { StatusDot } from "./components/StatusDot";
 import { SystemHealthBanner } from "./components/SystemHealthBanner";
@@ -251,6 +252,9 @@ export const SystemHealth: React.FC = () => {
                         certificatesFetchError={certificatesFetchError}
                         metadataFetchError={metadataFetchError}
                       />
+                    </GridItem>
+                    <GridItem span={12} lg={6}>
+                      <SystemHealthMetrics metrics={data.metrics} />
                     </GridItem>
                   </Grid>
                 </StackItem>

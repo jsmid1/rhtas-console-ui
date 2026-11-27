@@ -100,3 +100,53 @@ export const systemHealthHistoryMock: SystemHealthResponse = {
     ]),
   ],
 };
+
+export const systemHealthMetricsAvailableMock: SystemHealthResponse = {
+  ...systemHealthMock,
+  metrics: {
+    status: "available",
+    reason: null,
+    windowSeconds: 3600,
+    updatedAt: "2026-06-30T09:18:32.658987Z",
+    errorRates: {
+      totalRequests: 5120,
+      totalErrors: 2184,
+      errorRate: 0.4266,
+      serverErrors: 1512,
+      clientErrors: 1,
+      timeouts: 488,
+      byService: [
+        {
+          name: "fulcio",
+          monitored: true,
+          requests: 1200,
+          errors: 640,
+          errorRate: 0.5333,
+          recent: { requests: 40, errors: 0, errorRate: 0 },
+        },
+        {
+          name: "rekor",
+          monitored: true,
+          requests: 3100,
+          errors: 1500,
+          errorRate: 0.4839,
+          recent: { requests: 20, errors: 2, errorRate: 0.1 },
+        },
+        {
+          name: "tsa",
+          monitored: false,
+          requests: null,
+          errors: null,
+          errorRate: null,
+          recent: null,
+        },
+      ],
+      recentWindowSeconds: 300,
+    },
+    signingActivity: {
+      certificatesIssued: 312,
+      logEntriesAdded: 305,
+      timestampsIssued: 298,
+    },
+  },
+};
